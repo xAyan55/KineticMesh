@@ -1,5 +1,5 @@
-import AuthSectionThree from "@/components/ui/auth-section-3";
+import SidebarNavPreview from "@/components/ui/dashboard-sidebar";
 
 export default function Demo() {
-  return <AuthSectionThree />;
+  return <SidebarNavPreview />;
 }
