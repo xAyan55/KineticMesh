@@ -1,51 +1,45 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0a0a0f">
-  <title>404 - Page Not Found · HKVM Panel</title>
-  <link rel="icon" href="<%= siteLogo %>" type="image/png">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/css/admin.css">
-</head>
-<body>
-<div class="login-bg"></div>
-<div class="login-bg-grid"></div>
+<%- include('../components/header', { title: '404 - Page Not Found' }) %>
 
-<div class="error-page" style="position: relative; z-index: 1;">
-  <div style="text-align: center; animation: fadeIn 0.6s ease;">
-    <div class="error-code">404</div>
-    <div class="error-title">Page Not Found</div>
-    <div class="error-desc">
-      <%= message || 'The page you are looking for does not exist or has been moved.' %>
-    </div>
+<main class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style="background:var(--theme-bg, #0e0e0e);">
+  <div class="al-card w-full max-w-md p-8 text-center space-y-6 rounded-2xl shadow-xl"
+       style="border:1px solid var(--theme-border, rgba(255,255,255,0.1)); background:var(--theme-bg-card, #141414);">
     
-    <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
-      <a href="/dashboard" class="btn btn-primary btn-lg">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path>
-          <polyline points="9 22 9 12 15 12 15 22"></polyline>
-        </svg>
-        Go Home
-      </a>
-      <button onclick="history.back()" class="btn btn-ghost btn-lg">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
-        Go Back
-      </button>
+    <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl mx-auto shadow-inner"
+         style="background:rgba(239, 68, 68, 0.12); color:var(--theme-danger, #ef4444); border:1px solid rgba(239, 68, 68, 0.2);">
+      <%- icon('circle-alert', { class: 'w-7 h-7' }) %>
     </div>
 
-    <div style="margin-top: 40px; display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
-      <a href="/admin/vms" style="color: var(--text-muted); text-decoration: none; font-size: 13px;">🖥️ VMs</a>
-      <a href="/admin/users" style="color: var(--text-muted); text-decoration: none; font-size: 13px;">👥 Users</a>
-      <a href="/admin/settings" style="color: var(--text-muted); text-decoration: none; font-size: 13px;">⚙️ Settings</a>
+    <div class="space-y-2">
+      <span class="text-xs font-mono font-semibold tracking-wider uppercase" style="color:var(--theme-danger, #ef4444);">
+        Error 404
+      </span>
+      <h1 class="text-2xl font-bold tracking-tight" style="color:var(--theme-text-strong, #fafafa)">
+        Page Not Found
+      </h1>
+      <p class="text-xs max-w-xs mx-auto leading-relaxed" style="color:var(--theme-text-muted, #8a8a8a)">
+        <%= typeof message !== 'undefined' && message ? message : 'The requested instance or page could not be located on this cluster.' %>
+      </p>
+    </div>
+
+    <div class="flex items-center justify-center gap-3 pt-2">
+      <button type="button" onclick="history.back()" class="al-btn-secondary text-xs px-4 py-2 flex items-center gap-1.5">
+        <%- icon('arrow-left', { class: 'w-3.5 h-3.5' }) %>
+        <span>Go Back</span>
+      </button>
+      <a href="/dashboard" class="al-btn-primary text-xs px-4 py-2 flex items-center gap-1.5">
+        <%- icon('home', { class: 'w-3.5 h-3.5' }) %>
+        <span>Dashboard</span>
+      </a>
+    </div>
+
+    <div class="pt-4 border-t flex justify-center gap-4 text-xs font-medium"
+         style="border-color:var(--theme-border-subtle, rgba(255,255,255,0.06)); color:var(--theme-text-muted, #8a8a8a);">
+      <a href="/vms" class="hover:underline">My VMs</a>
+      <span>•</span>
+      <a href="/profile" class="hover:underline">Account</a>
+      <span>•</span>
+      <a href="/admin/dashboard" class="hover:underline">Admin</a>
     </div>
   </div>
-</div>
-</body>
-</html>
-
-
-
+</main>

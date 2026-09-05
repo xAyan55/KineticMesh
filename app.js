@@ -331,6 +331,8 @@ app.use(session({
 // Set EJS as view engine
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+const { icon } = require('./utils/icon');
+app.locals.icon = icon;
 
 // VM Process Manager (Global)
 const vmProcesses = new Map();
@@ -1403,24 +1405,28 @@ app.get('/favicon.ico', (req, res) => {
 
 // Middleware to pass user and settings to all views
 app.use((req, res, next) => {
+  res.locals.req = req;
+  res.locals.nonce = '';
   // Set defaults first
   res.locals.user = req.session.userId ? {
     id: req.session.userId,
     username: req.session.username,
-    role: req.session.role
+    role: req.session.role,
+    avatar: null
   } : null;
   
   // Panel version from .env
   res.locals.panelVersion = process.env.PANEL_VERSION || 'V2.0';
   
   // Set default logo and site name
-  res.locals.siteLogo = process.env.DEFAULT_LOGO_URL || 'https://i.imgur.com/0DmkSi4.png';
-  res.locals.siteName = process.env.PANEL_NAME || 'HKVM Panel';
+  res.locals.siteLogo = process.env.DEFAULT_LOGO_URL || '/public/images/logo.png';
+  res.locals.siteName = process.env.PANEL_NAME || 'KineticMesh';
   
   // Try to get site icon from database (non-blocking)
   db.get(`SELECT setting_value FROM settings WHERE setting_key = 'site_icon_url' LIMIT 1`, (err, row) => {
     if (row && row.setting_value) {
       res.locals.siteLogo = row.setting_value;
+      if (res.locals.settings) res.locals.settings.logo = row.setting_value;
     }
   });
   
@@ -1428,8 +1434,16 @@ app.use((req, res, next) => {
   db.get(`SELECT setting_value FROM settings WHERE setting_key = 'site_name' LIMIT 1`, (err, row2) => {
     if (row2 && row2.setting_value) {
       res.locals.siteName = row2.setting_value;
+      if (res.locals.settings) res.locals.settings.title = row2.setting_value;
     }
   });
+
+  res.locals.settings = {
+    title: res.locals.siteName,
+    logo: res.locals.siteLogo,
+    favicon: res.locals.siteLogo,
+    theme: 'dark'
+  };
   
   next();
 });

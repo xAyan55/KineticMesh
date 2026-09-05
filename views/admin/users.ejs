@@ -1,142 +1,122 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0a0a0f">
-  <title><%= title || 'Users - HKVM Panel' %></title>
-  <link rel="icon" href="<%= siteLogo %>" type="image/png">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/css/admin.css">
-</head>
-<body>
-<div class="admin-wrapper">
+<%- include('../components/header', { title: 'Users - Admin' }) %>
 
-  <%- include('../partials/admin/sidebar') %>
+<div class="flex h-screen overflow-hidden">
+  <!-- Desktop Sidebar -->
+  <div class="hidden lg:block w-56 h-full shrink-0">
+    <%- include('../components/sidebar') %>
+  </div>
 
-  <div class="admin-main">
-    <%- include('../partials/admin/header') %>
+  <!-- Main Content Container -->
+  <div id="page-content" class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+    <!-- Breadcrumb -->
+    <%- include('../components/ui/breadcrumb', { items: [
+      { label: 'Admin', href: '/admin/dashboard' },
+      { label: 'Users' }
+    ] }) %>
 
-    <div class="admin-content">
-
+    <main class="flex-1 p-4 lg:p-6 max-w-7xl w-full mx-auto space-y-6">
       <!-- Page Header -->
-      <div class="page-header">
-        <div class="page-title-section">
-          <h1 class="page-title">
-            <i class="fas fa-users" style="color: #6366F1;"></i> User Management
-          </h1>
-          <p class="page-subtitle">Manage user accounts and permissions</p>
+      <div class="al-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 class="al-page-title text-xl font-semibold tracking-tight" style="color:var(--theme-text-strong, #fafafa)">
+              User Management
+            </h1>
+            <span id="userCountBadge" class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-mono font-medium"
+                  style="background:var(--theme-bg-secondary, #212121); color:var(--theme-text-muted, #8a8a8a); border:1px solid var(--theme-border-subtle, rgba(255,255,255,0.08));">
+              0 Users
+            </span>
+          </div>
+          <p class="al-page-desc text-xs mt-1" style="color:var(--theme-text-muted, #8a8a8a)">
+            Manage tenant accounts, permissions, and administrative privilege assignments.
+          </p>
         </div>
-        <div class="page-actions">
-          <button class="btn btn-ghost btn-sm" onclick="loadUsers()">
-            <i class="fas fa-sync"></i> Refresh
-          </button>
-          <a href="/admin/users/create" class="btn btn-primary btn-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
-            <i class="fas fa-user-plus"></i> Add User
+
+        <div class="flex items-center gap-2">
+          <a href="/admin/users/create" class="al-btn-primary text-xs flex items-center gap-1.5 py-1.5 px-3">
+            <%- icon('user-plus', { class: 'w-3.5 h-3.5' }) %>
+            <span>Add User</span>
           </a>
+          <button type="button" onclick="loadUsers()" class="al-btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3">
+            <%- icon('rotate-cw', { class: 'w-3.5 h-3.5', id: 'refreshIcon' }) %>
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
-      <!-- Stats -->
-      <div class="stats-grid" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 20px;">
-        <div class="stat-card" style="--card-gradient: var(--gradient-primary); padding: 14px;">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <div class="stat-value" style="font-size: 24px;" id="totalUsersCount">—</div>
-              <div class="stat-label">Total Users</div>
+      <!-- Stats Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+        <div class="al-card p-4">
+          <h2 class="text-[11px] font-medium uppercase tracking-wide mb-1" style="color:var(--theme-text-muted, #8a8a8a);">Total Users</h2>
+          <p class="text-2xl font-bold tabular-nums" style="color:var(--theme-text-strong, #fafafa);" id="totalUsersCount">0</p>
+          <p class="text-[11px] mt-1" style="color:var(--theme-text-muted, #8a8a8a);">All registered tenants</p>
+        </div>
+        <div class="al-card p-4">
+          <h2 class="text-[11px] font-medium uppercase tracking-wide mb-1" style="color:var(--theme-text-muted, #8a8a8a);">Administrators</h2>
+          <p class="text-2xl font-bold tabular-nums text-indigo-400" id="adminCount">0</p>
+          <p class="text-[11px] mt-1" style="color:var(--theme-text-muted, #8a8a8a);">Full cluster privileges</p>
+        </div>
+        <div class="al-card p-4">
+          <h2 class="text-[11px] font-medium uppercase tracking-wide mb-1" style="color:var(--theme-text-muted, #8a8a8a);">Active Accounts</h2>
+          <p class="text-2xl font-bold tabular-nums text-emerald-400" id="activeUsersCount">0</p>
+          <p class="text-[11px] mt-1" style="color:var(--theme-text-muted, #8a8a8a);">Enabled login access</p>
+        </div>
+      </div>
+
+      <!-- Filters & Search -->
+      <div class="al-card p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="relative flex-1 max-w-md">
+          <input
+            type="text"
+            id="userSearch"
+            placeholder="Search by username, email, or ID..."
+            oninput="filterUsers()"
+            class="al-input text-xs w-full pl-8 py-1.5"
+          />
+          <div class="absolute left-2.5 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none">
+            <%- icon('search', { class: 'w-3.5 h-3.5' }) %>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <select id="roleFilter" onchange="filterUsers()" class="al-input text-xs py-1.5 px-3">
+            <option value="">All Roles</option>
+            <option value="admin">Administrators</option>
+            <option value="user">Regular Users</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Users Table Card -->
+      <div class="al-card overflow-hidden">
+        <div id="usersTable">
+          <div class="p-10 text-center">
+            <div class="w-8 h-8 rounded-xl flex items-center justify-center mx-auto mb-2.5 animate-spin text-zinc-500">
+              <%- icon('rotate-cw', { class: 'w-4 h-4' }) %>
             </div>
-            <div style="font-size: 28px;"><i class="fas fa-users" style="color: #6366F1;"></i></div>
-          </div>
-        </div>
-        <div class="stat-card" style="--card-gradient: linear-gradient(135deg, #8b5cf6, #7c3aed); padding: 14px;">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <div class="stat-value" style="font-size: 24px;" id="adminCount">—</div>
-              <div class="stat-label">Admins</div>
-            </div>
-            <div style="font-size: 28px;"><i class="fas fa-crown" style="color: #F59E0B;"></i></div>
-          </div>
-        </div>
-        <div class="stat-card" style="--card-gradient: var(--gradient-green); padding: 14px;">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <div>
-              <div class="stat-value" style="font-size: 24px;" id="activeUsersCount">—</div>
-              <div class="stat-label">Active</div>
-            </div>
-            <div style="font-size: 28px;"><i class="fas fa-check-circle" style="color: #10B981;"></i></div>
+            <p class="text-xs" style="color:var(--theme-text-muted, #8a8a8a)">Loading user accounts...</p>
           </div>
         </div>
       </div>
+    </main>
 
-      <!-- Filter -->
-      <div class="filter-bar" style="margin-bottom: 16px;">
-        <div class="search-input-wrapper" style="flex: 1; max-width: 300px;">
-          <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px;"></i>
-          <input type="text" class="form-control" id="userSearch" placeholder="Search users..." oninput="filterUsers()" style="padding-left: 36px;">
-        </div>
-        <select class="form-control" id="roleFilter" onchange="filterUsers()" style="width: 140px;">
-          <option value="">All Roles</option>
-          <option value="admin"><i class="fas fa-crown"></i> Admin</option>
-          <option value="user"><i class="fas fa-user"></i> User</option>
-        </select>
-      </div>
-
-      <!-- Users Table -->
-      <div class="card">
-        <div class="card-header">
-          <div class="card-title"><i class="fas fa-users" style="color: #6366F1;"></i> Users</div>
-          <span id="userCount" style="font-size: 11px; color: var(--text-muted);"></span>
-        </div>
-        <div class="table-container" id="usersTable">
-          <div style="padding: 40px; text-align: center;">
-            <div class="spinner spinner-lg" style="margin: 0 auto 16px;"></div>
-            <div style="color: var(--text-muted);">Loading users...</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <%- include('../partials/admin/footer') %>
+    <!-- Mobile Bottom Navigation -->
+    <%- include('../components/bottomNav') %>
   </div>
 </div>
 
 <script>
 let allUsers = [];
 
-// Load user Discord avatar
-async function loadUserAvatar(userId) {
-  try {
-    const avatarDiv = document.getElementById(`avatar_${userId}`);
-    if (!avatarDiv) return;
-
-    const res = await fetch(`/api/admin/users/${userId}/discord-info`);
-    if (!res.ok) return;
-
-    const discordInfo = await res.json();
-    if (discordInfo && discordInfo.discord_avatar && discordInfo.discord_id) {
-      // Build Discord CDN avatar URL
-      const discordAvatarUrl = `https://cdn.discordapp.com/avatars/${discordInfo.discord_id}/${discordInfo.discord_avatar}.png?size=128`;
-      
-      // Set background image
-      avatarDiv.style.backgroundImage = `url('${discordAvatarUrl}')`;
-      avatarDiv.style.backgroundSize = 'cover';
-      avatarDiv.style.backgroundPosition = 'center';
-      
-      // Hide initial text
-      const initialSpan = document.querySelector(`.user-initial-${userId}`);
-      if (initialSpan) initialSpan.style.display = 'none';
-      
-      // Show Discord badge
-      const badge = document.querySelector(`.discord-badge-${userId}`);
-      if (badge) badge.style.display = 'block';
-    }
-  } catch (e) {
-    console.error('Failed to load avatar for user', userId, e);
-  }
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 async function loadUsers() {
+  const icon = document.getElementById('refreshIcon');
+  if (icon) icon.classList.add('animate-spin');
+
   try {
     const res = await fetch('/api/admin/users');
     if (!res.ok) throw new Error('Failed to load users');
@@ -145,137 +125,132 @@ async function loadUsers() {
     // Update stats
     const total = allUsers.length;
     const admins = allUsers.filter(u => u.role === 'admin').length;
-    const active = allUsers.filter(u => u.is_active).length;
+    const active = allUsers.filter(u => u.is_active !== 0).length;
     
     document.getElementById('totalUsersCount').textContent = total;
     document.getElementById('adminCount').textContent = admins;
     document.getElementById('activeUsersCount').textContent = active;
+    document.getElementById('userCountBadge').textContent = `${total} Users`;
     
-    renderUsers();
+    filterUsers();
   } catch(e) {
     document.getElementById('usersTable').innerHTML = `
-      <div class="empty-state" style="padding: 40px;">
-        <div class="empty-state-icon"><i class="fas fa-exclamation-triangle" style="color: #EF4444; font-size: 32px;"></i></div>
-        <div class="empty-state-title">Failed to load users</div>
-        <div class="empty-state-desc">${e.message}</div>
-        <button class="btn btn-primary" onclick="loadUsers()"><i class="fas fa-redo"></i> Try Again</button>
-      </div>`;
-    showToast('Failed to load users', 'error');
+      <div class="p-8 text-center text-xs text-red-400">
+        Failed to load users: ${escHtml(e.message)}
+      </div>
+    `;
+  } finally {
+    if (icon) setTimeout(() => icon.classList.remove('animate-spin'), 600);
   }
 }
 
-function filterUsers() { renderUsers(); }
-
-function renderUsers() {
-  const q = document.getElementById('userSearch')?.value.toLowerCase() || '';
+function filterUsers() {
+  const q = document.getElementById('userSearch')?.value.toLowerCase().trim() || '';
   const role = document.getElementById('roleFilter')?.value || '';
   
   const filtered = allUsers.filter(u => {
-    const matchQ = !q || u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
     const matchRole = !role || u.role === role;
-    return matchQ && matchRole;
+    const matchSearch = !q ||
+      u.username?.toLowerCase().includes(q) ||
+      u.email?.toLowerCase().includes(q) ||
+      String(u.id).includes(q);
+    return matchRole && matchSearch;
   });
+
+  renderUsers(filtered);
+}
+
+function renderUsers(users) {
+  const container = document.getElementById('usersTable');
   
-  const count = document.getElementById('userCount');
-  if (count) count.textContent = `${filtered.length} of ${allUsers.length} users`;
-  
-  if (filtered.length === 0) {
-    document.getElementById('usersTable').innerHTML = `
-      <div class="empty-state" style="padding: 40px;">
-        <div class="empty-state-icon"><i class="fas fa-search" style="color: var(--text-muted); font-size: 32px;"></i></div>
-        <div class="empty-state-title">No Users Found</div>
-        <div class="empty-state-desc">No users match your search.</div>
-      </div>`;
+  if (users.length === 0) {
+    container.innerHTML = `
+      <div class="p-8 text-center text-xs" style="color:var(--theme-text-muted, #8a8a8a)">
+        No users match the search filter.
+      </div>
+    `;
     return;
   }
 
-  document.getElementById('usersTable').innerHTML = `
-    <table class="table">
-      <thead>
-        <tr>
-          <th>User</th>
-          <th>Email</th>
-          <th>Role</th>
-          <th>Status</th>
-          <th>Created</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${filtered.map(u => `
-          <tr>
-            <td>
-              <div style="display: flex; align-items: center; gap: 10px;">
-                <div class="user-avatar-cell" id="avatar_${u.id}" style="width: 34px; height: 34px; background: ${u.role === 'admin' ? 'var(--gradient-primary)' : 'var(--gradient-green)'}; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: white; flex-shrink: 0; position: relative; background-size: cover; background-position: center;">
-                  <span class="user-initial-${u.id}">${u.username.charAt(0).toUpperCase()}</span>
-                  <span class="discord-badge-${u.id}" style="position: absolute; bottom: -2px; right: -2px; width: 14px; height: 14px; background: #5865F2; border-radius: 50%; display: none; border: 2px solid var(--bg-primary);"></span>
-                </div>
-                <div>
-                  <div style="font-size: 13px; font-weight: 600; color: var(--text-primary);">${escHtml(u.username)}</div>
-                  <div style="font-size: 11px; color: var(--text-muted);">ID: ${u.id}</div>
-                </div>
-              </div>
-            </td>
-            <td style="color: var(--text-secondary); font-size: 12px;">${escHtml(u.email || '—')}</td>
-            <td>
-              <span class="badge ${u.role === 'admin' ? 'badge-admin' : 'badge-user'}">
-                ${u.role === 'admin' ? '<i class="fas fa-crown" style="color: #F59E0B;"></i>' : '<i class="fas fa-user" style="color: #3B82F6;"></i>'} ${u.role}
-              </span>
-            </td>
-            <td>
-              <span class="badge ${u.is_active ? 'badge-running' : 'badge-stopped'}">
-                ${u.is_active ? '<i class="fas fa-check-circle" style="color: #10B981;"></i> Active' : '<i class="fas fa-times-circle" style="color: #EF4444;"></i> Inactive'}
-              </span>
-            </td>
-            <td style="font-size: 11px; color: var(--text-muted);">
-              ${u.created_at ? new Date(u.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
-            </td>
-            <td>
-              <div style="display: flex; gap: 6px;">
-                <a href="/admin/users/${u.id}/edit" class="btn btn-primary btn-sm" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-                  <i class="fas fa-edit"></i> Edit
-                </a>
-                ${u.id === 1 ? '' : `<button class="btn btn-danger btn-sm" onclick="deleteUser(${u.id}, '${escHtml(u.username)}')"><i class="fas fa-trash"></i> Delete</button>`}
-              </div>
-            </td>
+  container.innerHTML = `
+    <div class="overflow-x-auto">
+      <table class="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr class="border-b" style="background:var(--theme-bg-secondary, #1a1a1a); border-color:var(--theme-border-subtle, rgba(255,255,255,0.06)); color:var(--theme-text-muted, #8a8a8a)">
+            <th class="py-3 px-4 font-medium uppercase text-[10px] tracking-wider">User</th>
+            <th class="py-3 px-4 font-medium uppercase text-[10px] tracking-wider">Role</th>
+            <th class="py-3 px-4 font-medium uppercase text-[10px] tracking-wider">Status</th>
+            <th class="py-3 px-4 font-medium uppercase text-[10px] tracking-wider">Registered</th>
+            <th class="py-3 px-4 font-medium uppercase text-[10px] tracking-wider text-right">Actions</th>
           </tr>
-        `).join('')}
-      </tbody>
-    </table>`;
-  
-  // Load Discord avatars for all users
-  setTimeout(() => {
-    filtered.forEach(u => {
-      loadUserAvatar(u.id);
-    });
-  }, 200);
+        </thead>
+        <tbody class="divide-y" style="border-color:var(--theme-border-subtle, rgba(255,255,255,0.04));">
+          ${users.map(u => {
+            const isAdmin = u.role === 'admin';
+            const isActive = u.is_active !== 0;
+            return `
+              <tr class="hover:bg-[var(--theme-bg-hover,rgba(255,255,255,0.02))] transition-colors">
+                <td class="py-3 px-4">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 border"
+                         style="background:var(--theme-bg-secondary, #212121); border-color:var(--theme-border-subtle, rgba(255,255,255,0.08)); color:var(--theme-text-strong, #fafafa)">
+                      ${escHtml((u.username || 'U').substring(0, 2).toUpperCase())}
+                    </div>
+                    <div class="min-w-0">
+                      <div class="font-medium" style="color:var(--theme-text-strong, #fafafa)">
+                        ${escHtml(u.username)}
+                      </div>
+                      <div class="text-[11px] font-mono mt-0.5" style="color:var(--theme-text-muted, #8a8a8a)">
+                        ${escHtml(u.email || 'No email')} • #${u.id}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td class="py-3 px-4">
+                  <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+                        style="${isAdmin ? 'background:rgba(99, 102, 241, 0.12); color:#818cf8; border:1px solid rgba(99, 102, 241, 0.2);' : 'background:var(--theme-bg-secondary, #212121); color:var(--theme-text-muted, #8a8a8a); border:1px solid var(--theme-border-subtle);'}">
+                    ${isAdmin ? 'Administrator' : 'User'}
+                  </span>
+                </td>
+                <td class="py-3 px-4">
+                  <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium"
+                        style="${isActive ? 'background:rgba(16, 185, 129, 0.12); color:#34d399; border:1px solid rgba(16, 185, 129, 0.2);' : 'background:rgba(239, 68, 68, 0.12); color:#f87171; border:1px solid rgba(239, 68, 68, 0.2);'}">
+                    <span class="w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-red-400'}"></span>
+                    <span>${isActive ? 'Active' : 'Disabled'}</span>
+                  </span>
+                </td>
+                <td class="py-3 px-4 text-xs font-mono" style="color:var(--theme-text-muted, #8a8a8a)">
+                  ${u.created_at ? new Date(u.created_at).toLocaleDateString() : '—'}
+                </td>
+                <td class="py-3 px-4 text-right">
+                  <div class="flex items-center justify-end gap-1.5">
+                    <a href="/admin/users/${u.id}/edit" class="al-btn-secondary text-xs px-2.5 py-1">Edit</a>
+                    <button type="button" onclick="deleteUser(${u.id}, '${escHtml(u.username)}')" class="al-btn-danger text-xs px-2.5 py-1">Delete</button>
+                  </div>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
 }
 
 async function deleteUser(id, username) {
-  const confirmed = confirm(`Delete user "${username}"? This action cannot be undone.`);
-  if (!confirmed) return;
-  
+  if (!confirm(`Are you sure you want to delete user "${username}" (#${id})?`)) return;
   try {
     const res = await fetch(`/api/admin/users/${id}`, { method: 'DELETE' });
     const data = await res.json();
     if (res.ok && data.success) {
-      showToast(`User "${username}" deleted`, 'success');
       loadUsers();
     } else {
-      showToast('Delete failed: ' + (data.error || 'Unknown error'), 'error');
+      alert('Delete failed: ' + (data.error || 'Unknown error'));
     }
   } catch(e) {
-    showToast('Delete failed: ' + e.message, 'error');
+    alert('Error: ' + e.message);
   }
-}
-
-function escHtml(str) {
-  if (!str) return '—';
-  return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 loadUsers();
 </script>
-</body>
-</html>
-

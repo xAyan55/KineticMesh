@@ -1,0 +1,58 @@
+<%
+  const currentPath = (typeof req !== 'undefined' && req.path) ? req.path : (typeof currentPage !== 'undefined' ? '/' + currentPage : '');
+  const currentUser = (typeof user !== 'undefined' && user) ? user : null;
+  const isAdmin = currentUser && (currentUser.role === 'admin' || currentUser.isAdmin === true);
+  const panelTitle = (typeof settings !== 'undefined' && settings.title) ? settings.title : (typeof siteName !== 'undefined' ? siteName : 'KineticMesh');
+  const panelLogo = (typeof settings !== 'undefined' && settings.logo) ? settings.logo : (typeof siteLogo !== 'undefined' ? siteLogo : '/public/images/logo.png');
+%>
+
+<!-- Mobile top bar -->
+<div class="mobile-top-bar fixed top-0 left-0 right-0 z-40 lg:hidden h-12 flex items-center justify-between px-3.5 border-b"
+     style="background:var(--theme-nav-bg, #1a1a1a); border-color:var(--theme-border, rgba(255,255,255,0.1));">
+  <a href="/" class="flex items-center gap-2 min-w-0">
+    <img src="<%= panelLogo %>" alt="Logo" class="h-7 w-7 rounded-lg shrink-0 p-0.5 object-contain"
+         style="background:var(--theme-logo-bg, rgba(255,255,255,0.06)); border:1px solid var(--theme-border-subtle, rgba(255,255,255,0.1));">
+    <h1 class="font-medium text-[13px] truncate" style="color:var(--theme-text-strong, #fafafa);"><%= panelTitle %></h1>
+  </a>
+  <div class="flex items-center gap-2">
+    <% if (currentUser) { %>
+    <a href="/profile" class="p-1 rounded-lg transition-colors flex items-center justify-center h-8 w-8 text-xs font-semibold"
+       style="background:var(--theme-bg-input, rgba(255,255,255,0.08)); color:var(--theme-text-strong, #fafafa); border:1px solid var(--theme-border, rgba(255,255,255,0.1));">
+      <%= (currentUser.username || 'U').substring(0, 2).toUpperCase() %>
+    </a>
+    <% } %>
+  </div>
+</div>
+
+<!-- Mobile bottom navigation -->
+<nav id="mobile-bottom-nav" class="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 lg:hidden border-t backdrop-blur-md"
+     aria-label="Mobile navigation"
+     style="background:var(--theme-nav-bg, rgba(26,26,26,0.92)); border-color:var(--theme-border, rgba(255,255,255,0.1));">
+  <div class="flex items-center justify-around h-[52px] px-1">
+    <a href="/dashboard" class="flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-medium transition-colors"
+       style="<%= (currentPath === '/dashboard' || currentPath === '/') ? 'color:var(--theme-text-strong, #fafafa);' : 'color:var(--theme-text-muted, #8a8a8a);' %>">
+      <%- icon('layout-dashboard', { class: 'w-5 h-5 mb-0.5' }) %>
+      <span>Home</span>
+    </a>
+
+    <a href="/vms" class="flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-medium transition-colors"
+       style="<%= currentPath.startsWith('/vm') && !currentPath.startsWith('/admin') ? 'color:var(--theme-text-strong, #fafafa);' : 'color:var(--theme-text-muted, #8a8a8a);' %>">
+      <%- icon('server', { class: 'w-5 h-5 mb-0.5' }) %>
+      <span>VMs</span>
+    </a>
+
+    <% if (isAdmin) { %>
+    <a href="/admin/dashboard" class="flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-medium transition-colors"
+       style="<%= currentPath.startsWith('/admin') ? 'color:var(--theme-text-strong, #fafafa);' : 'color:var(--theme-text-muted, #8a8a8a);' %>">
+      <%- icon('gauge', { class: 'w-5 h-5 mb-0.5' }) %>
+      <span>Admin</span>
+    </a>
+    <% } %>
+
+    <a href="/profile" class="flex flex-col items-center justify-center flex-1 h-full py-1 text-[10px] font-medium transition-colors"
+       style="<%= currentPath === '/profile' ? 'color:var(--theme-text-strong, #fafafa);' : 'color:var(--theme-text-muted, #8a8a8a);' %>">
+      <%- icon('user', { class: 'w-5 h-5 mb-0.5' }) %>
+      <span>Account</span>
+    </a>
+  </div>
+</nav>

@@ -1,390 +1,151 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SSH Terminal - HKVM</title>
-  <link rel="icon" href="<%= siteLogo %>" type="image/png">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/css/admin.css">
-  
-  <!-- xterm.js CSS -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
-  
-  <style>
-    * { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #0a0a0f; font-family: 'Courier New', monospace; }
-    
-    .ssh-container {
-      display: flex;
-      height: 100vh;
-      flex-direction: column;
-      background: #0a0a0f;
-    }
-    
-    .ssh-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 20px;
-      background: linear-gradient(90deg, #0f0f18 0%, #13131f 100%);
-      border-bottom: 1px solid rgba(99, 102, 241, 0.2);
-      flex-shrink: 0;
-      z-index: 100;
-    }
-    
-    .ssh-title-section {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    
-    .ssh-title {
-      font-size: 16px;
-      font-weight: 700;
-      color: #f1f5f9;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    
-    .ssh-status {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 12px;
-      background: rgba(239, 68, 68, 0.08);
-      border: 1px solid rgba(239, 68, 68, 0.25);
-      border-radius: 4px;
-      font-size: 11px;
-      font-weight: 600;
-      color: #ef4444;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .ssh-status.connected {
-      background: rgba(16, 185, 129, 0.08);
-      border-color: rgba(16, 185, 129, 0.25);
-      color: #10b981;
-    }
-    
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: currentColor;
-      animation: pulse 1.5s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    
-    .ssh-controls {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    
-    .btn-ssh {
-      padding: 7px 14px;
-      border: none;
-      border-radius: 4px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      text-decoration: none;
-    }
-    
-    .btn-connect {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: white;
-      border: none;
-    }
-    
-    .btn-connect:hover {
-      opacity: 0.9;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-    }
-    
-    .btn-disconnect {
-      background: rgba(239, 68, 68, 0.15);
-      color: #ef4444;
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      display: none;
-    }
-    
-    .btn-disconnect:hover {
-      background: rgba(239, 68, 68, 0.25);
-    }
-    
-    .btn-back {
-      background: transparent;
-      color: var(--text-secondary);
-      border: 1px solid rgba(99, 102, 241, 0.2);
-    }
-    
-    .btn-back:hover {
-      border-color: rgba(99, 102, 241, 0.4);
-      color: var(--text-primary);
-    }
-    
-    /* Terminal Container */
-    .ssh-terminal {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      background: #0a0a0f;
-      position: relative;
-    }
-    
-    /* xterm.js customization */
-    .terminal-wrapper {
-      flex: 1;
-      overflow: hidden;
-      background: #0a0a0f;
-    }
-    
-    .terminal-wrapper .xterm {
-      height: 100%;
-      padding: 10px;
-    }
-    
-    /* Modal Styles */
-    .modal-backdrop {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.85);
-      z-index: 2000;
-      align-items: center;
-      justify-content: center;
-      backdrop-filter: blur(4px);
-    }
-    
-    .modal-backdrop.show {
-      display: flex;
-      animation: fadeIn 0.25s ease-out;
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    
-    .modal-dialog {
-      background: linear-gradient(135deg, #13131f 0%, #1a1f3a 100%);
-      border: 1px solid rgba(99, 102, 241, 0.3);
-      border-radius: 12px;
-      width: 90%;
-      max-width: 500px;
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8);
-      animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(40px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .modal-header {
-      padding: 20px;
-      background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.1));
-      border-bottom: 1px solid rgba(99, 102, 241, 0.2);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    
-    .modal-title {
-      margin: 0;
-      font-size: 18px;
-      font-weight: 700;
-      color: #f1f5f9;
-    }
-    
-    .modal-body {
-      padding: 20px;
-    }
-    
-    .modal-footer {
-      padding: 16px 20px;
-      background: rgba(99, 102, 241, 0.02);
-      border-top: 1px solid rgba(99, 102, 241, 0.15);
-      display: flex;
-      gap: 10px;
-      justify-content: flex-end;
-    }
-    
-    .form-group {
-      margin-bottom: 16px;
-    }
-    
-    .form-label {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #94a3b8;
-      margin-bottom: 6px;
-    }
-    
-    .form-input {
-      width: 100%;
-      padding: 10px 12px;
-      background: rgba(15, 23, 42, 0.8);
-      border: 1px solid rgba(99, 102, 241, 0.25);
-      border-radius: 6px;
-      color: #f1f5f9;
-      font-size: 13px;
-      font-family: 'Courier New', monospace;
-      transition: all 0.2s;
-    }
-    
-    .form-input:focus {
-      outline: none;
-      border-color: #6366f1;
-      background: rgba(15, 23, 42, 0.95);
-      box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-    }
-    
-    .btn-modal {
-      padding: 10px 20px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      border: none;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-transform: uppercase;
-    }
-    
-    .btn-modal.primary {
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
-      color: white;
-    }
-    
-    .btn-modal.primary:hover {
-      opacity: 0.9;
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-    }
-    
-    .btn-modal.secondary {
-      background: transparent;
-      color: var(--text-secondary);
-      border: 1px solid rgba(99, 102, 241, 0.2);
-    }
-    
-    .btn-modal.secondary:hover {
-      border-color: rgba(99, 102, 241, 0.4);
-      background: rgba(99, 102, 241, 0.05);
-    }
-    
-    /* Spinner for connecting */
-    .spinner {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(99, 102, 241, 0.3);
-      border-top: 2px solid #6366f1;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin-right: 6px;
-    }
-    
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-  </style>
-</head>
-<body>
+<%- include('../components/header', { title: 'SSH Terminal #' + vmId }) %>
 
-<div class="ssh-container">
-  <!-- Header -->
-  <div class="ssh-header">
-    <div class="ssh-title-section">
-      <div class="ssh-title">
-        <i class="fas fa-terminal" style="color: #6366f1;"></i>
-        SSH Terminal
-      </div>
-      <div class="ssh-status" id="statusBadge">
-        <span class="status-dot"></span>
-        <span id="statusText">Disconnected</span>
-      </div>
-    </div>
-    
-    <div class="ssh-controls">
-      <button class="btn-ssh btn-connect" id="connectBtn" onclick="openModal()">
-        <i class="fas fa-link"></i>
-        Connect
-      </button>
-      <button class="btn-ssh btn-disconnect" id="disconnectBtn" onclick="disconnect()">
-        <i class="fas fa-plug"></i>
-        Disconnect
-      </button>
-      <a href="/vms" class="btn-ssh btn-back">
-        <i class="fas fa-arrow-left"></i>
-        Back
-      </a>
-    </div>
+<!-- xterm.js CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.min.css">
+
+<div class="flex h-screen overflow-hidden">
+  <!-- Desktop Sidebar -->
+  <div class="hidden lg:block w-56 h-full shrink-0">
+    <%- include('../components/sidebar') %>
   </div>
-  
-  <!-- Terminal Display with xterm.js -->
-  <div class="ssh-terminal">
-    <div class="terminal-wrapper" id="terminalContainer"></div>
+
+  <!-- Main Content Container -->
+  <div id="page-content" class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+    <!-- Breadcrumb -->
+    <%- include('../components/ui/breadcrumb', { items: [
+      { label: 'Virtual Machines', href: '/vms' },
+      { label: 'VM #' + vmId, href: '/vm/' + vmId },
+      { label: 'SSH Terminal' }
+    ] }) %>
+
+    <main class="flex-1 p-4 lg:p-6 max-w-7xl w-full mx-auto flex flex-col space-y-4">
+      <!-- Page Header -->
+      <div class="al-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-3">
+            <h1 class="al-page-title text-xl font-semibold tracking-tight" style="color:var(--theme-text-strong, #fafafa)">
+              SSH Terminal <span id="vmNameLabel" class="text-sm font-normal" style="color:var(--theme-text-muted, #8a8a8a)"></span>
+            </h1>
+            <span id="statusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium"
+              style="background:rgba(113, 113, 122, 0.12); color:#a1a1aa; border:1px solid rgba(113, 113, 122, 0.2);">
+              <span class="w-1.5 h-1.5 rounded-full bg-zinc-400"></span>
+              <span id="statusText">Disconnected</span>
+            </span>
+          </div>
+          <p class="al-page-desc text-xs mt-1" style="color:var(--theme-text-muted, #8a8a8a)">
+            Secure Shell session connected via xterm.js emulation.
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <a href="/vm/<%= vmId %>" class="al-btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3">
+            <%- icon('arrow-left', { class: 'w-3.5 h-3.5' }) %>
+            <span>Back to VM</span>
+          </a>
+          <button type="button" id="connectBtn" onclick="openModal()" class="al-btn-primary text-xs flex items-center gap-1.5 py-1.5 px-3">
+            <%- icon('link', { class: 'w-3.5 h-3.5' }) %>
+            <span>Connect</span>
+          </button>
+          <button type="button" id="disconnectBtn" onclick="disconnect()" class="al-btn-danger text-xs hidden items-center gap-1.5 py-1.5 px-3">
+            <%- icon('unlink', { class: 'w-3.5 h-3.5' }) %>
+            <span>Disconnect</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Terminal Surface -->
+      <div class="al-card flex-1 flex flex-col min-h-[540px] rounded-xl overflow-hidden shadow-lg"
+           style="border:1px solid var(--theme-border, rgba(255,255,255,0.1)); background:#09090b;">
+        
+        <!-- Terminal Header Bar -->
+        <div class="flex items-center justify-between px-4 py-2.5 shrink-0 border-b"
+             style="background:var(--theme-bg-secondary, #1a1a1a); border-color:var(--theme-border, rgba(255,255,255,0.1));">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-red-500/80"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-yellow-500/80"></span>
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></span>
+            <span class="ml-2 text-xs font-mono select-none" style="color:var(--theme-text-muted, #8a8a8a)">xterm.js @ VM #<%= vmId %></span>
+          </div>
+          <div class="text-[11px] font-mono" style="color:var(--theme-text-muted, #8a8a8a)">
+            Shortcuts: Ctrl+O Connect, Ctrl+L Clear
+          </div>
+        </div>
+
+        <!-- xterm Wrapper -->
+        <div class="flex-1 w-full p-2 overflow-hidden" id="terminalContainer" style="background:#09090b; min-height:460px;"></div>
+      </div>
+    </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <%- include('../components/bottomNav') %>
   </div>
 </div>
 
-<!-- Connection Modal -->
-<div class="modal-backdrop" id="modalBackdrop">
-  <div class="modal-dialog">
-    <div class="modal-header">
-      <i class="fas fa-lock" style="font-size: 20px; color: #6366f1;"></i>
-      <h2 class="modal-title">SSH Connection</h2>
-    </div>
+<!-- Airlink SSH Connection Modal -->
+<div id="modalBackdrop" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+  <div class="al-card w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150"
+       style="background:var(--theme-bg-card, #141414); border:1px solid var(--theme-border, rgba(255,255,255,0.12));">
     
-    <div class="modal-body">
-      <div class="form-group">
-        <label class="form-label">Host / IP Address</label>
-        <input type="text" class="form-input" id="inputHost" placeholder="192.168.1.100 or localhost">
+    <div class="flex items-center justify-between px-5 py-4 border-b"
+         style="background:var(--theme-bg-secondary, #1a1a1a); border-color:var(--theme-border, rgba(255,255,255,0.08));">
+      <div class="flex items-center gap-2.5">
+        <div class="p-2 rounded-xl" style="background:rgba(99, 102, 241, 0.12); color:var(--theme-primary, #6366f1)">
+          <%- icon('terminal', { class: 'w-4 h-4' }) %>
+        </div>
+        <div>
+          <h2 class="text-sm font-semibold" style="color:var(--theme-text-strong, #fafafa)">SSH Connection</h2>
+          <p class="text-[11px]" style="color:var(--theme-text-muted, #8a8a8a)">Authenticate to guest instance</p>
+        </div>
       </div>
-      
-      <div class="form-group">
-        <label class="form-label">Port</label>
-        <input type="number" class="form-input" id="inputPort" value="22" min="1" max="65535">
+      <button type="button" onclick="closeModal()" class="text-zinc-400 hover:text-white p-1 rounded-lg transition-colors">
+        <%- icon('x', { class: 'w-4 h-4' }) %>
+      </button>
+    </div>
+
+    <div class="p-5 space-y-3.5">
+      <div class="grid grid-cols-3 gap-3">
+        <div class="col-span-2 space-y-1">
+          <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">Host / IP Address</label>
+          <input type="text" id="inputHost" placeholder="192.168.1.100 or localhost" class="al-input text-xs w-full">
+        </div>
+        <div class="space-y-1">
+          <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">Port</label>
+          <input type="number" id="inputPort" value="22" min="1" max="65535" class="al-input text-xs w-full">
+        </div>
       </div>
-      
-      <div class="form-group">
-        <label class="form-label">Username</label>
-        <input type="text" class="form-input" id="inputUsername" placeholder="root or ubuntu">
+
+      <div class="space-y-1">
+        <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">Username</label>
+        <input type="text" id="inputUsername" placeholder="root or ubuntu" class="al-input text-xs w-full">
       </div>
-      
-      <div class="form-group">
-        <label class="form-label">Password</label>
-        <input type="password" class="form-input" id="inputPassword" placeholder="••••••••">
+
+      <div class="space-y-1">
+        <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">Password</label>
+        <input type="password" id="inputPassword" placeholder="••••••••" class="al-input text-xs w-full">
       </div>
     </div>
-    
-    <div class="modal-footer">
-      <button class="btn-modal secondary" onclick="closeModal()">Cancel</button>
-      <button class="btn-modal primary" onclick="connect()" id="connectModalBtn">
-        <i class="fas fa-play"></i>
-        Connect
+
+    <div class="flex items-center justify-end gap-2 px-5 py-3.5 border-t"
+         style="background:var(--theme-bg-secondary, #1a1a1a); border-color:var(--theme-border, rgba(255,255,255,0.08));">
+      <button type="button" onclick="closeModal()" class="al-btn-secondary text-xs px-3.5 py-1.5">Cancel</button>
+      <button type="button" id="connectModalBtn" onclick="connect()" class="al-btn-primary text-xs px-4 py-1.5 flex items-center gap-1.5">
+        <%- icon('play', { class: 'w-3 h-3' }) %>
+        <span>Connect</span>
       </button>
     </div>
   </div>
 </div>
+
+<style>
+  .xterm {
+    height: 100%;
+    padding: 10px;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  }
+  .xterm-viewport::-webkit-scrollbar { width: 6px; }
+  .xterm-viewport::-webkit-scrollbar-track { background: #09090b; }
+  .xterm-viewport::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+</style>
 
 <!-- xterm.js Library -->
 <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.min.js"></script>
@@ -408,48 +169,40 @@ function initTerminal() {
     cols: 120,
     rows: 30,
     theme: {
-      background: '#0a0a0f',
-      foreground: '#d1d5db',
+      background: '#09090b',
+      foreground: '#e4e4e7',
       cursor: '#6366f1',
-      cursorAccent: '#0a0a0f',
-      black: '#1e1e1e',
+      cursorAccent: '#09090b',
+      black: '#18181b',
       red: '#ef4444',
       green: '#10b981',
       yellow: '#f59e0b',
       blue: '#3b82f6',
-      magenta: '#ec4899',
+      magenta: '#a855f7',
       cyan: '#06b6d4',
-      white: '#d1d5db',
-      brightBlack: '#6b7280',
-      brightRed: '#ef4444',
-      brightGreen: '#10b981',
+      white: '#f4f4f5',
+      brightBlack: '#71717a',
+      brightRed: '#f87171',
+      brightGreen: '#34d399',
       brightYellow: '#fbbf24',
       brightBlue: '#60a5fa',
-      brightMagenta: '#f472b6',
+      brightMagenta: '#c084fc',
       brightCyan: '#22d3ee',
-      brightWhite: '#f1f5f9'
+      brightWhite: '#ffffff'
     },
     fontSize: 13,
-    fontFamily: "'Courier New', 'Courier', monospace",
-    lineHeight: 1.2,
-    letterSpacing: 0,
-    fontWeight: 400,
+    fontFamily: "'JetBrains Mono', 'Fira Code', 'Courier New', monospace",
+    lineHeight: 1.25,
     cursorStyle: 'block',
     cursorBlink: true,
     scrollback: 5000
   });
   
-  // Load add-ons
   term.loadAddon(fitAddon);
   term.loadAddon(new WebLinksAddon.WebLinksAddon());
-  
-  // Open terminal in container
   term.open(container);
-  
-  // Fit terminal to container size
   fitAddon.fit();
   
-  // Handle window resize
   window.addEventListener('resize', () => {
     try {
       fitAddon.fit();
@@ -458,7 +211,6 @@ function initTerminal() {
     }
   });
   
-  // Handle terminal input
   term.onData(data => {
     if (ws && ws.readyState === WebSocket.OPEN && isConnected) {
       ws.send(JSON.stringify({
@@ -467,39 +219,48 @@ function initTerminal() {
       }));
     }
   });
-  
-  console.log('[Terminal] xterm.js initialized');
 }
 
 // ============= CONNECTION FUNCTIONS =============
 function setConnected(state) {
   isConnected = state;
   const badge = document.getElementById('statusBadge');
+  const statusText = document.getElementById('statusText');
   const connectBtn = document.getElementById('connectBtn');
   const disconnectBtn = document.getElementById('disconnectBtn');
   
   if (state) {
-    badge.classList.add('connected');
-    document.getElementById('statusText').textContent = 'Connected';
-    connectBtn.style.display = 'none';
-    disconnectBtn.style.display = 'inline-flex';
+    badge.style.cssText = 'background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2);';
+    badge.firstElementChild.className = 'w-1.5 h-1.5 rounded-full bg-emerald-400';
+    statusText.textContent = 'Connected';
+    connectBtn.classList.add('hidden');
+    connectBtn.classList.remove('flex');
+    disconnectBtn.classList.remove('hidden');
+    disconnectBtn.classList.add('flex');
     if (term) term.focus();
   } else {
-    badge.classList.remove('connected');
-    document.getElementById('statusText').textContent = 'Disconnected';
-    connectBtn.style.display = 'inline-flex';
-    disconnectBtn.style.display = 'none';
+    badge.style.cssText = 'background: rgba(113, 113, 122, 0.12); color: #a1a1aa; border: 1px solid rgba(113, 113, 122, 0.2);';
+    badge.firstElementChild.className = 'w-1.5 h-1.5 rounded-full bg-zinc-400';
+    statusText.textContent = 'Disconnected';
+    connectBtn.classList.remove('hidden');
+    connectBtn.classList.add('flex');
+    disconnectBtn.classList.add('hidden');
+    disconnectBtn.classList.remove('flex');
   }
 }
 
 // ============= MODAL FUNCTIONS =============
 function openModal() {
-  document.getElementById('modalBackdrop').classList.add('show');
-  document.getElementById('inputHost').focus();
+  const modal = document.getElementById('modalBackdrop');
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  document.getElementById('inputHost')?.focus();
 }
 
 function closeModal() {
-  document.getElementById('modalBackdrop').classList.remove('show');
+  const modal = document.getElementById('modalBackdrop');
+  modal.classList.add('hidden');
+  modal.classList.remove('flex');
 }
 
 // ============= SSH CONNECTION =============
@@ -514,44 +275,35 @@ function connect() {
     return;
   }
   
-  // Disable connect button during connection
   const connectBtn = document.getElementById('connectModalBtn');
   connectBtn.disabled = true;
   const originalHTML = connectBtn.innerHTML;
-  connectBtn.innerHTML = '<span class="spinner"></span>Connecting...';
+  connectBtn.innerHTML = 'Connecting...';
   
   closeModal();
   
   if (term) {
     term.clear();
-    term.write('\r\n\u001b[1;36m╔═════════════════════════════════════════════╗\u001b[0m\r\n');
-    term.write('\u001b[1;36m║  🔐 Connecting to SSH Server...            ║\u001b[0m\r\n');
-    term.write('\u001b[1;36m╚═════════════════════════════════════════════╝\u001b[0m\r\n');
+    term.write('\r\n\u001b[1;36m┌─────────────────────────────────────────┐\u001b[0m\r\n');
+    term.write('\u001b[1;36m│  🔐 Connecting to SSH Host...           │\u001b[0m\r\n');
+    term.write('\u001b[1;36m└─────────────────────────────────────────┘\u001b[0m\r\n');
     term.write(`\r\n\u001b[33m[*]\u001b[0m Connecting to ${username}@${host}:${port}...\r\n`);
   }
   
-  // Determine WebSocket protocol
   const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = proto + '//' + window.location.host + '/ssh-terminal';
   
   try {
     ws = new WebSocket(wsUrl);
     ws.binaryType = 'arraybuffer';
-    console.log('[SSH] Connecting to WebSocket:', wsUrl);
   } catch (e) {
-    console.error('[SSH] WebSocket creation failed:', e);
-    if (term) {
-      term.write('\r\n\u001b[1;31m✗ Error: Failed to create WebSocket connection\u001b[0m\r\n');
-    }
+    if (term) term.write('\r\n\u001b[1;31m✗ Error: Failed to create WebSocket connection\u001b[0m\r\n');
     connectBtn.disabled = false;
     connectBtn.innerHTML = originalHTML;
     return;
   }
   
   ws.onopen = function() {
-    console.log('[SSH] WebSocket opened');
-    
-    // Send SSH connection request
     const message = {
       type: 'connect',
       vmId: vmId,
@@ -560,80 +312,53 @@ function connect() {
       username: username,
       password: password
     };
-    
-    console.log('[SSH] Sending connect message');
     ws.send(JSON.stringify(message));
   };
   
   ws.onmessage = function(event) {
     try {
-      // Check if it's binary data (SSH output) or JSON (control messages)
       if (event.data instanceof ArrayBuffer) {
-        // Binary data from SSH stream
         const uint8Array = new Uint8Array(event.data);
         const text = String.fromCharCode.apply(null, uint8Array);
-        if (term) {
-          term.write(text);
-        }
+        if (term) term.write(text);
       } else {
-        // JSON control messages
         const message = JSON.parse(event.data);
-        
         if (message.type === 'connected') {
-          console.log('[SSH] SSH connection established');
           setConnected(true);
-          if (term) {
-            term.write('\r\n\u001b[1;32m✓ SSH Connection Established\u001b[0m\r\n\r\n');
-          }
+          if (term) term.write('\r\n\u001b[1;32m✓ SSH Connection Established\u001b[0m\r\n\r\n');
           connectBtn.disabled = false;
           connectBtn.innerHTML = originalHTML;
         } else if (message.type === 'closed') {
-          console.log('[SSH] SSH connection closed');
-          if (term) {
-            term.write('\r\n\r\n\u001b[1;31m⛔ SSH Connection Closed\u001b[0m\r\n');
-          }
+          if (term) term.write('\r\n\r\n\u001b[1;31m⛔ SSH Connection Closed\u001b[0m\r\n');
           setConnected(false);
         } else if (message.type === 'error') {
-          console.error('[SSH] Error:', message.message);
-          if (term) {
-            term.write('\r\n\u001b[1;31m✗ Error: ' + message.message + '\u001b[0m\r\n');
-          }
+          if (term) term.write('\r\n\u001b[1;31m✗ Error: ' + message.message + '\u001b[0m\r\n');
           setConnected(false);
           connectBtn.disabled = false;
           connectBtn.innerHTML = originalHTML;
         }
       }
     } catch (e) {
-      console.error('[SSH] Message parse error:', e);
-      // If it's not valid JSON, it's probably binary SSH data
       if (event.data instanceof Blob) {
         event.data.arrayBuffer().then(buffer => {
           const uint8Array = new Uint8Array(buffer);
           const text = String.fromCharCode.apply(null, uint8Array);
-          if (term) {
-            term.write(text);
-          }
+          if (term) term.write(text);
         });
       }
     }
   };
   
   ws.onerror = function(error) {
-    console.error('[SSH] WebSocket error:', error);
-    if (term) {
-      term.write('\r\n\u001b[1;31m✗ WebSocket Error: Connection failed\u001b[0m\r\n');
-    }
+    if (term) term.write('\r\n\u001b[1;31m✗ WebSocket Error: Connection failed\u001b[0m\r\n');
     setConnected(false);
     connectBtn.disabled = false;
     connectBtn.innerHTML = originalHTML;
   };
   
   ws.onclose = function() {
-    console.log('[SSH] WebSocket closed');
-    if (isConnected) {
-      if (term) {
-        term.write('\r\n\r\n\u001b[1;31m⛔ SSH Connection Closed\u001b[0m\r\n');
-      }
+    if (isConnected && term) {
+      term.write('\r\n\r\n\u001b[1;31m⛔ SSH Connection Closed\u001b[0m\r\n');
     }
     setConnected(false);
     connectBtn.disabled = false;
@@ -642,53 +367,32 @@ function connect() {
 }
 
 function disconnect() {
-  if (ws) {
-    console.log('[SSH] Closing WebSocket');
-    ws.close();
-  }
+  if (ws) ws.close();
   setConnected(false);
 }
 
-// ============= MODAL HELPERS =============
-// Close modal on Escape key
 document.addEventListener('keydown', function(e) {
-  if (e.key === 'Escape') {
-    closeModal();
+  if (e.key === 'Escape') closeModal();
+  if (e.ctrlKey && (e.key === 'o' || e.key === 'O')) {
+    e.preventDefault();
+    if (!isConnected) openModal();
   }
 });
 
-// ============= INITIALIZATION =============
 async function initializePage() {
-  console.log('[SSH] Initializing page with vmId=' + vmId);
-  
   try {
-    // Fetch VM details
     const response = await fetch('/api/vms/' + vmId);
-    
-    if (!response.ok) {
-      console.error('[SSH] Failed to fetch VM:', response.status);
-      if (term) {
-        term.write('\u001b[1;31m✗ Error: Could not load VM details\u001b[0m\r\n');
-      }
-      return;
-    }
-    
+    if (!response.ok) return;
     const vm = await response.json();
-    console.log('[SSH] VM loaded:', vm.vm_name);
     
-    // Verify ownership
-    if (vm.owner_id !== userId) {
-      console.warn('[SSH] User does not own this VM');
-      if (term) {
-        term.write('\u001b[1;31m✗ Access Denied: You do not own this VM\u001b[0m\r\n');
-      }
-      setTimeout(() => {
-        window.location.href = '/vms';
-      }, 2000);
+    if (vm.owner_id !== userId && '<%= user.role %>' !== 'admin') {
+      window.location.href = '/vms';
       return;
     }
     
-    // Auto-populate form with VM details
+    const label = document.getElementById('vmNameLabel');
+    if (label && vm.vm_name) label.textContent = `(${vm.vm_name})`;
+    
     setTimeout(() => {
       if (vm.ipv4_address) document.getElementById('inputHost').value = vm.ipv4_address;
       if (vm.ssh_port) document.getElementById('inputPort').value = vm.ssh_port;
@@ -697,51 +401,23 @@ async function initializePage() {
       if (vm.username) document.getElementById('inputUsername').value = vm.username;
       if (vm.password) document.getElementById('inputPassword').value = vm.password;
       
-      console.log('[SSH] Form populated, opening modal');
       openModal();
     }, 300);
-    
   } catch (e) {
-    console.error('[SSH] Initialization error:', e);
-    if (term) {
-      term.write('\u001b[1;31m✗ Error: ' + e.message + '\u001b[0m\r\n');
-    }
+    console.error('[SSH] Init error:', e);
   }
 }
 
-// ============= PAGE LOAD =============
 window.addEventListener('load', function() {
-  // Initialize terminal first
   initTerminal();
   
-  // Show welcome message
-  term.write('\r\n\u001b[1;36m╔════════════════════════════════════════════════════════════╗\u001b[0m\r\n');
-  term.write('\u001b[1;36m║  🔐 HKVM v1 SSH Terminal - Professional Remote Access     ║\u001b[0m\r\n');
-  term.write('\u001b[1;36m║  Powered by xterm.js | Like PuTTY, Termux, SSH over Web    ║\u001b[0m\r\n');
-  term.write('\u001b[1;36m╚════════════════════════════════════════════════════════════╝\u001b[0m\r\n');
-  term.write('\r\n\u001b[33m[*]\u001b[0m Click the \u001b[1mConnect\u001b[0m button or use \u001b[1;33mCtrl+O\u001b[0m to establish SSH connection\r\n');
-  term.write('\u001b[32m[✓]\u001b[0m After connecting, type commands directly in the terminal\r\n');
-  term.write('\u001b[34m[!]\u001b[0m Keyboard shortcuts:\r\n');
-  term.write('    • \u001b[1mCtrl+C\u001b[0m - Interrupt/stop running command\r\n');
-  term.write('    • \u001b[1mCtrl+D\u001b[0m - Close connection\r\n');
-  term.write('    • \u001b[1mCtrl+L\u001b[0m - Clear terminal screen\r\n');
-  term.write('\r\n\u001b[36m→ Ready for connection\u001b[0m\r\n\r\n');
+  term.write('\r\n\u001b[1;36m┌────────────────────────────────────────────────────────┐\u001b[0m\r\n');
+  term.write('\u001b[1;36m│  KineticMesh SSH Terminal                              │\u001b[0m\r\n');
+  term.write('\u001b[1;36m│  Powered by xterm.js | Low-latency Web SSH Gateway    │\u001b[0m\r\n');
+  term.write('\u001b[1;36m└────────────────────────────────────────────────────────┘\u001b[0m\r\n');
+  term.write('\r\n\u001b[33m[*]\u001b[0m Press \u001b[1mConnect\u001b[0m or \u001b[1;33mCtrl+O\u001b[0m to initiate connection\r\n');
+  term.write('\u001b[32m[✓]\u001b[0m Session handles full ANSI color & terminal controls\r\n\r\n');
   
-  // Initialize page
   initializePage();
 });
-
-// Add keyboard shortcut for quick connect (Ctrl+O)
-document.addEventListener('keydown', function(e) {
-  if (e.ctrlKey && (e.key === 'o' || e.key === 'O')) {
-    e.preventDefault();
-    if (!isConnected) {
-      openModal();
-    }
-  }
-});
 </script>
-
-</body>
-</html>
-

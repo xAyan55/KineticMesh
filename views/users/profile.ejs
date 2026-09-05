@@ -1,147 +1,171 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#0a0a0f">
-  <title><%= title || 'Profile - HKVM Panel' %></title>
-  <link rel="icon" href="<%= siteLogo %>" type="image/png">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/css/admin.css">
-</head>
-<body>
-<div class="admin-wrapper">
+<%- include('../components/header', { title: 'Account Settings' }) %>
 
-  <%- include('../partials/users/sidebar') %>
+<div class="flex h-screen overflow-hidden">
+  <!-- Desktop Sidebar -->
+  <div class="hidden lg:block w-56 h-full shrink-0">
+    <%- include('../components/sidebar') %>
+  </div>
 
-  <div class="admin-main">
-    <%- include('../partials/admin/header') %>
+  <!-- Main Content Container -->
+  <div id="page-content" class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+    <!-- Breadcrumb -->
+    <%- include('../components/ui/breadcrumb', { items: [
+      { label: 'Platform', href: '/dashboard' },
+      { label: 'Account' }
+    ] }) %>
 
-    <div class="admin-content">
+    <main class="flex-1 p-4 lg:p-6 max-w-5xl w-full mx-auto space-y-6">
       <!-- Page Header -->
-      <div class="page-header">
-        <div>
-          <h1 class="page-title"><i class="fas fa-user" style="color: #6366F1;"></i> My Profile</h1>
-          <p style="color: var(--text-muted); margin-top: 4px;">Manage your account settings</p>
+      <div class="al-page-header flex items-center justify-between gap-4">
+        <div class="flex items-center gap-4">
+          <div class="relative shrink-0" id="userAvatarContainer">
+            <div id="userProfileAvatar"
+                 class="h-12 w-12 rounded-xl flex items-center justify-center font-semibold text-base shadow-sm border overflow-hidden"
+                 style="background:var(--theme-bg-secondary, #212121); border-color:var(--theme-border, rgba(255,255,255,0.1)); color:var(--theme-text-strong, #fafafa);">
+              <%= (user && user.username ? user.username.substring(0, 2).toUpperCase() : 'US') %>
+            </div>
+          </div>
+          <div>
+            <h1 class="al-page-title text-xl font-semibold tracking-tight" style="color:var(--theme-text-strong, #fafafa)">
+              Account Settings
+            </h1>
+            <p class="al-page-desc text-xs mt-1" style="color:var(--theme-text-muted, #8a8a8a)">
+              Manage your personal information, authentication credentials, and security.
+            </p>
+          </div>
         </div>
       </div>
 
-      <!-- Profile Content -->
-      <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px; max-width: 1000px;">
+      <!-- Content Grid -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column: User Summary Card -->
+        <div class="space-y-4">
+          <div class="al-card p-5 space-y-4">
+            <div class="text-center pb-4 border-b" style="border-color:var(--theme-border-subtle, rgba(255,255,255,0.06));">
+              <h3 class="text-base font-semibold" style="color:var(--theme-text-strong, #fafafa)" id="displayUsername">
+                <%= user ? user.username : 'User' %>
+              </h3>
+              <p class="text-xs mt-0.5" style="color:var(--theme-text-muted, #8a8a8a)">
+                User ID: <span id="displayUserID" class="font-mono">#<%= user ? user.id : '—' %></span>
+              </p>
+              <div class="mt-2.5">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium"
+                      style="background:rgba(99, 102, 241, 0.12); color:var(--theme-primary, #818cf8); border:1px solid rgba(99, 102, 241, 0.2);">
+                  <%- icon('shield', { class: 'w-3 h-3' }) %>
+                  <span class="capitalize"><%= user ? user.role : 'user' %></span>
+                </span>
+              </div>
+            </div>
 
-        <!-- Left: Avatar & Overview -->
-        <div class="card">
-          <div class="card-body" style="text-align: center;">
-            <div style="font-size: 64px; margin-bottom: 12px;" id="userProfileAvatar"><i class="fas fa-user-circle" style="color: #6366F1;"></i></div>
-            <div class="card-title" style="margin-bottom: 4px;" id="displayUsername">—</div>
-            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">User Account</div>
-            
-            <div style="display: grid; gap: 12px;">
-              <div style="padding: 10px; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 6px;">
-                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">User ID</div>
-                <div style="font-size: 14px; font-weight: 600;" id="displayUserID">—</div>
+            <div class="space-y-2.5 text-xs">
+              <div class="flex items-center justify-between py-1 border-b" style="border-color:var(--theme-border-subtle, rgba(255,255,255,0.06));">
+                <span style="color:var(--theme-text-muted, #8a8a8a)">Account Status</span>
+                <span class="inline-flex items-center gap-1 text-emerald-400 font-medium">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Active
+                </span>
               </div>
-              <div style="padding: 10px; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 6px;">
-                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Role</div>
-                <div style="font-size: 14px; font-weight: 600;">User</div>
+              <div class="flex items-center justify-between py-1 border-b" style="border-color:var(--theme-border-subtle, rgba(255,255,255,0.06));">
+                <span style="color:var(--theme-text-muted, #8a8a8a)">Member Since</span>
+                <span style="color:var(--theme-text, #e4e4e7)" id="displayCreatedAt">—</span>
               </div>
-              <div style="padding: 10px; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.15); border-radius: 6px;">
-                <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">Member Since</div>
-                <div style="font-size: 14px; font-weight: 600;" id="displayCreatedAt">—</div>
+              <div class="flex items-center justify-between py-1">
+                <span style="color:var(--theme-text-muted, #8a8a8a)">Last Login</span>
+                <span style="color:var(--theme-text, #e4e4e7)" id="displayLastLogin">—</span>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Right: Edit Forms -->
-        <div>
-
-          <!-- Personal Information -->
-          <div class="card" style="margin-bottom: 20px;">
-            <div class="card-header">
-              <div class="card-title"><i class="fas fa-info-circle" style="color: #3B82F6;"></i> Personal Information</div>
+        <!-- Right Column: Edit Forms -->
+        <div class="lg:col-span-2 space-y-6">
+          
+          <!-- Personal Info Card -->
+          <div class="al-card p-5 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3" style="border-color:var(--theme-border-subtle, rgba(255,255,255,0.06));">
+              <div class="flex items-center gap-2">
+                <%- icon('user', { class: 'w-4 h-4 text-indigo-400' }) %>
+                <h2 class="text-sm font-semibold" style="color:var(--theme-text-strong, #fafafa)">Personal Information</h2>
+              </div>
+              <span class="text-[11px]" style="color:var(--theme-text-muted, #8a8a8a)">Basic profile details</span>
             </div>
-            <div class="card-body">
-              <div class="form-group">
-                <label class="form-label">Full Name</label>
-                <input type="text" class="form-control" id="inputFullName" placeholder="Your full name">
+
+            <div class="space-y-3.5">
+              <div class="space-y-1">
+                <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">Full Name</label>
+                <input type="text" id="inputFullName" placeholder="Your name" class="al-input text-xs w-full">
               </div>
-              <div class="form-group">
-                <label class="form-label">Email Address</label>
-                <input type="email" class="form-control" id="inputEmail" placeholder="your@email.com">
+
+              <div class="space-y-1">
+                <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">Email Address</label>
+                <input type="email" id="inputEmail" placeholder="user@example.com" class="al-input text-xs w-full">
               </div>
-              <div style="display: flex; gap: 8px;">
-                <button class="btn btn-primary" onclick="updateProfile()"><i class="fas fa-save" style="color: #10B981;"></i> Save Changes</button>
-                <button class="btn btn-ghost" onclick="loadProfile()">Cancel</button>
-              </div>
+            </div>
+
+            <div class="flex justify-end pt-2">
+              <button type="button" onclick="updateProfile()" class="al-btn-primary text-xs px-4 py-2 flex items-center gap-1.5">
+                <%- icon('check', { class: 'w-3.5 h-3.5' }) %>
+                <span>Save Profile</span>
+              </button>
             </div>
           </div>
 
-          <!-- Change Password -->
-          <div class="card" style="margin-bottom: 20px;">
-            <div class="card-header">
-              <div class="card-title"><i class="fas fa-lock" style="color: #EF4444;"></i> Change Password</div>
+          <!-- Change Password Card -->
+          <div class="al-card p-5 space-y-4">
+            <div class="flex items-center justify-between border-b pb-3" style="border-color:var(--theme-border-subtle, rgba(255,255,255,0.06));">
+              <div class="flex items-center gap-2">
+                <%- icon('lock', { class: 'w-4 h-4 text-amber-400' }) %>
+                <h2 class="text-sm font-semibold" style="color:var(--theme-text-strong, #fafafa)">Change Password</h2>
+              </div>
+              <span class="text-[11px]" style="color:var(--theme-text-muted, #8a8a8a)">Update login credentials</span>
             </div>
-            <div class="card-body">
-              <div class="form-group">
-                <label class="form-label">Current Password <span class="required">*</span></label>
-                <input type="password" class="form-control" id="inputCurrentPassword" placeholder="Enter current password">
-              </div>
-              <div class="form-group">
-                <label class="form-label">New Password <span class="required">*</span></label>
-                <input type="password" class="form-control" id="inputNewPassword" placeholder="Enter new password (min. 6 characters)">
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
-                  Password strength: <span id="passwordStrength">—</span>
-                </div>
-              </div>
-              <div class="form-group">
-                <label class="form-label">Confirm New Password <span class="required">*</span></label>
-                <input type="password" class="form-control" id="inputConfirmPassword" placeholder="Confirm new password">
-              </div>
-              <div style="display: flex; gap: 8px;">
-                <button class="btn btn-primary" onclick="changePassword()"><i class="fas fa-sync" style="color: #8B5CF6;"></i> Update Password</button>
-                <button class="btn btn-ghost" onclick="clearPasswordForm()">Clear</button>
-              </div>
-            </div>
-          </div>
 
-          <!-- Account Status -->
-          <div class="card">
-            <div class="card-header">
-              <div class="card-title"><i class="fas fa-chart-bar" style="color: #06B6D4;"></i> Account Status</div>
-            </div>
-            <div class="card-body">
-              <div style="display: grid; gap: 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-subtle);">
-                  <span style="font-size: 13px;">Account Status</span>
-                  <span class="badge badge-running"><i class="fas fa-check-circle" style="color: #10B981;"></i> Active</span>
+            <div class="space-y-3.5">
+              <div class="space-y-1">
+                <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">Current Password</label>
+                <input type="password" id="inputCurrentPassword" placeholder="Enter existing password" class="al-input text-xs w-full">
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div class="space-y-1">
+                  <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">New Password</label>
+                  <input type="password" id="inputNewPassword" placeholder="Min. 6 characters" class="al-input text-xs w-full">
+                  <div class="text-[11px] mt-1" style="color:var(--theme-text-muted, #8a8a8a)">
+                    Strength: <span id="passwordStrength" class="font-medium">—</span>
+                  </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-subtle);">
-                  <span style="font-size: 13px;">Last Login</span>
-                  <span style="font-size: 12px; color: var(--text-secondary);" id="displayLastLogin">—</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0;">
-                  <span style="font-size: 13px;">Account Created</span>
-                  <span style="font-size: 12px; color: var(--text-secondary);" id="displayAccountCreated">—</span>
+
+                <div class="space-y-1">
+                  <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">Confirm New Password</label>
+                  <input type="password" id="inputConfirmPassword" placeholder="Re-enter new password" class="al-input text-xs w-full">
                 </div>
               </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2">
+              <button type="button" onclick="clearPasswordForm()" class="al-btn-secondary text-xs px-3.5 py-2">
+                Clear
+              </button>
+              <button type="button" onclick="changePassword()" class="al-btn-primary text-xs px-4 py-2 flex items-center gap-1.5">
+                <%- icon('key', { class: 'w-3.5 h-3.5' }) %>
+                <span>Update Password</span>
+              </button>
             </div>
           </div>
 
         </div>
 
       </div>
+    </main>
 
-    </div>
-
-    <%- include('../partials/admin/footer') %>
+    <!-- Mobile Bottom Navigation -->
+    <%- include('../components/bottomNav') %>
   </div>
 </div>
 
 <script>
 let currentUser = null;
 
-// Load user profile
 async function loadProfile() {
   try {
     const res = await fetch('/api/user/profile');
@@ -151,18 +175,15 @@ async function loadProfile() {
     }
     currentUser = await res.json();
     
-    // Display user info - handle null/undefined values
     document.getElementById('displayUsername').textContent = currentUser.username || '—';
     document.getElementById('displayUserID').textContent = `#${currentUser.id || '—'}`;
     document.getElementById('displayCreatedAt').textContent = currentUser.created_at ? formatDate(currentUser.created_at) : '—';
     document.getElementById('displayLastLogin').textContent = currentUser.last_login ? formatDateTime(currentUser.last_login) : 'Never';
-    document.getElementById('displayAccountCreated').textContent = currentUser.created_at ? formatDateTime(currentUser.created_at) : '—';
     
-    // Populate form fields
     document.getElementById('inputFullName').value = currentUser.full_name || '';
     document.getElementById('inputEmail').value = currentUser.email || '';
     
-    // Load Discord avatar if linked
+    // Discord avatar if available
     try {
       const discordRes = await fetch('/api/discord-account-info');
       if (discordRes.ok) {
@@ -170,20 +191,17 @@ async function loadProfile() {
         if (discordAccount && discordAccount.discord_avatar) {
           const discordAvatarUrl = `https://cdn.discordapp.com/avatars/${discordAccount.discord_id}/${discordAccount.discord_avatar}.png?size=256`;
           const avatarEl = document.getElementById('userProfileAvatar');
-          avatarEl.innerHTML = `<img src="${discordAvatarUrl}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #6366F1;" alt="Discord Avatar">`;
+          if (avatarEl) {
+            avatarEl.innerHTML = `<img src="${discordAvatarUrl}" class="w-full h-full object-cover" alt="Discord Avatar">`;
+          }
         }
       }
-    } catch(e) {
-      // No Discord account, use default
-    }
-    
+    } catch(e) {}
   } catch(e) {
     console.error('[Profile Error]', e);
-    alert('Failed to load profile: ' + e.message);
   }
 }
 
-// Update profile (name & email)
 async function updateProfile() {
   const fullName = document.getElementById('inputFullName').value.trim();
   const email = document.getElementById('inputEmail').value.trim();
@@ -193,24 +211,16 @@ async function updateProfile() {
     return;
   }
   
-  if (!isValidEmail(email)) {
-    alert('Please enter a valid email address');
-    return;
-  }
-  
   try {
     const res = await fetch('/api/user/profile', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        full_name: fullName,
-        email: email
-      })
+      body: JSON.stringify({ full_name: fullName, email: email })
     });
     
     const data = await res.json();
     if (res.ok && data.success) {
-      alert('✅ Profile updated successfully!');
+      alert('Profile updated successfully!');
       loadProfile();
     } else {
       alert('Failed: ' + (data.error || 'Unknown error'));
@@ -220,7 +230,6 @@ async function updateProfile() {
   }
 }
 
-// Change password
 async function changePassword() {
   const current = document.getElementById('inputCurrentPassword').value;
   const newPass = document.getElementById('inputNewPassword').value;
@@ -230,12 +239,10 @@ async function changePassword() {
     alert('All password fields are required');
     return;
   }
-  
   if (newPass.length < 6) {
     alert('New password must be at least 6 characters');
     return;
   }
-  
   if (newPass !== confirm) {
     alert('New password and confirmation do not match');
     return;
@@ -245,15 +252,12 @@ async function changePassword() {
     const res = await fetch('/api/user/password', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        current_password: current,
-        new_password: newPass
-      })
+      body: JSON.stringify({ current_password: current, new_password: newPass })
     });
     
     const data = await res.json();
     if (res.ok && data.success) {
-      alert('✅ Password changed successfully!');
+      alert('Password changed successfully!');
       clearPasswordForm();
     } else {
       alert('Failed: ' + (data.error || 'Unknown error'));
@@ -270,25 +274,32 @@ function clearPasswordForm() {
   document.getElementById('passwordStrength').textContent = '—';
 }
 
-// Password strength indicator
 document.getElementById('inputNewPassword')?.addEventListener('input', function(e) {
   const pass = e.target.value;
   let strength = '—';
+  let color = 'var(--theme-text-muted)';
   
-  if (pass.length < 6) {
-    strength = '<i class="fas fa-circle" style="color: #EF4444;"></i> Weak';
+  if (!pass) {
+    strength = '—';
+  } else if (pass.length < 6) {
+    strength = 'Weak';
+    color = '#ef4444';
   } else if (pass.length < 10 || !/[A-Z]/.test(pass) || !/[0-9]/.test(pass)) {
-    strength = '<i class="fas fa-circle" style="color: #F59E0B;"></i> Fair';
+    strength = 'Fair';
+    color = '#f59e0b';
   } else if (pass.length >= 12 && /[A-Z]/.test(pass) && /[0-9]/.test(pass) && /[^a-zA-Z0-9]/.test(pass)) {
-    strength = '<i class="fas fa-circle" style="color: #10B981;"></i> Strong';
+    strength = 'Strong';
+    color = '#10b981';
   } else {
-    strength = '<i class="fas fa-circle" style="color: #F59E0B;"></i> Good';
+    strength = 'Good';
+    color = '#3b82f6';
   }
   
-  document.getElementById('passwordStrength').innerHTML = strength;
+  const el = document.getElementById('passwordStrength');
+  el.textContent = strength;
+  el.style.color = color;
 });
 
-// Utility functions
 function formatDate(dateStr) {
   if (!dateStr) return '—';
   return new Date(dateStr).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -299,15 +310,5 @@ function formatDateTime(dateStr) {
   return new Date(dateStr).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function isValidEmail(email) {
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return re.test(email);
-}
-
-// Load profile on page load
 loadProfile();
 </script>
-</body>
-</html>
-
-

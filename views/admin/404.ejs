@@ -1,0 +1,36 @@
+<%- include('../components/header', { title: typeof title !== 'undefined' && title ? title : '404 - Not Found' }) %>
+
+<main class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
+      style="background:var(--theme-bg, #0e0e0e);">
+  <div class="al-card w-full max-w-md p-8 text-center space-y-6 rounded-2xl shadow-xl"
+       style="border:1px solid var(--theme-border, rgba(255,255,255,0.1)); background:var(--theme-bg-card, #141414);">
+    
+    <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl mx-auto shadow-inner"
+         style="background:rgba(239, 68, 68, 0.12); color:var(--theme-danger, #ef4444); border:1px solid rgba(239, 68, 68, 0.2);">
+      <%- icon('shield-alert', { class: 'w-7 h-7' }) %>
+    </div>
+
+    <div class="space-y-2">
+      <span class="text-xs font-mono font-semibold tracking-wider uppercase" style="color:var(--theme-danger, #ef4444);">
+        Admin Error
+      </span>
+      <h1 class="text-2xl font-bold tracking-tight" style="color:var(--theme-text-strong, #fafafa)">
+        <%= typeof title !== 'undefined' && title ? title : 'Resource Not Found' %>
+      </h1>
+      <p class="text-xs max-w-xs mx-auto leading-relaxed" style="color:var(--theme-text-muted, #8a8a8a)">
+        <%= typeof message !== 'undefined' && message ? message : 'The requested administrative resource could not be found or access is restricted.' %>
+      </p>
+    </div>
+
+    <div class="flex items-center justify-center gap-3 pt-2">
+      <button type="button" onclick="history.back()" class="al-btn-secondary text-xs px-4 py-2 flex items-center gap-1.5">
+        <%- icon('arrow-left', { class: 'w-3.5 h-3.5' }) %>
+        <span>Go Back</span>
+      </button>
+      <a href="/admin/dashboard" class="al-btn-primary text-xs px-4 py-2 flex items-center gap-1.5">
+        <%- icon('gauge', { class: 'w-3.5 h-3.5' }) %>
+        <span>Admin Overview</span>
+      </a>
+    </div>
+  </div>
+</main>
