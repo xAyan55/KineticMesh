@@ -1,209 +1,27 @@
-<%- include('../components/header', { title: 'Create User - Admin' }) %>
-
-<div class="flex h-screen overflow-hidden">
-  <!-- Desktop Sidebar -->
-  <div class="hidden lg:block w-56 h-full shrink-0">
-    <%- include('../components/sidebar') %>
-  </div>
-
-  <!-- Main Content Container -->
-  <div id="page-content" class="flex-1 flex flex-col min-w-0 overflow-y-auto">
-    <!-- Breadcrumb -->
-    <%- include('../components/ui/breadcrumb', { items: [
-      { label: 'Admin', href: '/admin/dashboard' },
-      { label: 'Users', href: '/admin/users' },
-      { label: 'Create User' }
-    ] }) %>
-
-    <main class="flex-1 p-4 lg:p-6 max-w-4xl w-full mx-auto space-y-6">
-      <!-- Page Header -->
-      <div class="al-page-header flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 class="al-page-title text-xl font-semibold tracking-tight" style="color:var(--theme-text-strong, #fafafa)">
-            Create New User
-          </h1>
-          <p class="al-page-desc text-xs mt-1" style="color:var(--theme-text-muted, #8a8a8a)">
-            Provision a new tenant user account with credentials and role assignment.
-          </p>
-        </div>
-
-        <a href="/admin/users" class="al-btn-secondary text-xs flex items-center gap-1.5 py-1.5 px-3">
-          <%- icon('arrow-left', { class: 'w-3.5 h-3.5' }) %>
-          <span>Back to Users</span>
-        </a>
-      </div>
-
-      <div id="alertBox" class="hidden p-3.5 rounded-xl text-xs"></div>
-
-      <!-- Form Grid -->
-      <form id="createUserForm" onsubmit="submitCreateUser(event)" class="space-y-6">
-        
-        <!-- User Information Card -->
-        <div class="al-card p-5 space-y-4">
-          <div class="flex items-center gap-2 border-b pb-3" style="border-color:var(--theme-border-subtle, rgba(255,255,255,0.06));">
-            <%- icon('user', { class: 'w-4 h-4 text-indigo-400' }) %>
-            <h2 class="text-sm font-semibold" style="color:var(--theme-text-strong, #fafafa)">User Information</h2>
-          </div>
-
-          <div class="space-y-3.5">
-            <div class="space-y-1">
-              <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">
-                Username <span class="text-red-400">*</span>
-              </label>
-              <input type="text" id="username" placeholder="e.g. john_doe" required class="al-input text-xs w-full">
-              <p class="text-[11px]" style="color:var(--theme-text-muted, #8a8a8a)">Alphanumeric characters and underscores (3-20 chars).</p>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div class="space-y-1">
-                <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">Email Address</label>
-                <input type="email" id="email" placeholder="user@example.com" class="al-input text-xs w-full">
-              </div>
-
-              <div class="space-y-1">
-                <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">Full Name</label>
-                <input type="text" id="fullName" placeholder="John Doe" class="al-input text-xs w-full">
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Security Card -->
-        <div class="al-card p-5 space-y-4">
-          <div class="flex items-center gap-2 border-b pb-3" style="border-color:var(--theme-border-subtle, rgba(255,255,255,0.06));">
-            <%- icon('lock', { class: 'w-4 h-4 text-amber-400' }) %>
-            <h2 class="text-sm font-semibold" style="color:var(--theme-text-strong, #fafafa)">Security Credentials</h2>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-            <div class="space-y-1">
-              <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">
-                Password <span class="text-red-400">*</span>
-              </label>
-              <input type="password" id="password" placeholder="Min. 6 characters" required class="al-input text-xs w-full">
-            </div>
-
-            <div class="space-y-1">
-              <label class="al-label text-xs font-medium" style="color:var(--theme-text, #e4e4e7)">
-                Confirm Password <span class="text-red-400">*</span>
-              </label>
-              <input type="password" id="confirmPassword" placeholder="Re-enter password" required class="al-input text-xs w-full">
-            </div>
-          </div>
-        </div>
-
-        <!-- Role & Privilege Card -->
-        <div class="al-card p-5 space-y-4">
-          <div class="flex items-center gap-2 border-b pb-3" style="border-color:var(--theme-border-subtle, rgba(255,255,255,0.06));">
-            <%- icon('shield', { class: 'w-4 h-4 text-emerald-400' }) %>
-            <h2 class="text-sm font-semibold" style="color:var(--theme-text-strong, #fafafa)">Role & Permissions</h2>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label class="al-card p-3.5 flex items-start gap-3 cursor-pointer transition-colors border"
-                   style="background:var(--theme-bg-secondary, #1a1a1a); border-color:var(--theme-border-subtle, rgba(255,255,255,0.08));">
-              <input type="radio" name="role" id="roleUser" value="user" checked class="mt-0.5 text-indigo-600 focus:ring-0">
-              <div>
-                <div class="text-xs font-semibold" style="color:var(--theme-text-strong, #fafafa)">Standard User</div>
-                <div class="text-[11px] mt-0.5" style="color:var(--theme-text-muted, #8a8a8a)">Can manage their assigned virtual machines.</div>
-              </div>
-            </label>
-
-            <label class="al-card p-3.5 flex items-start gap-3 cursor-pointer transition-colors border"
-                   style="background:var(--theme-bg-secondary, #1a1a1a); border-color:var(--theme-border-subtle, rgba(255,255,255,0.08));">
-              <input type="radio" name="role" id="roleAdmin" value="admin" class="mt-0.5 text-indigo-600 focus:ring-0">
-              <div>
-                <div class="text-xs font-semibold" style="color:var(--theme-text-strong, #fafafa)">Administrator</div>
-                <div class="text-[11px] mt-0.5" style="color:var(--theme-text-muted, #8a8a8a)">Full administrative cluster control.</div>
-              </div>
-            </label>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-end gap-3 pt-2">
-          <a href="/admin/users" class="al-btn-secondary text-xs px-4 py-2">Cancel</a>
-          <button type="submit" id="submitBtn" class="al-btn-primary text-xs px-5 py-2 flex items-center gap-1.5">
-            <%- icon('plus', { class: 'w-3.5 h-3.5' }) %>
-            <span>Create Account</span>
-          </button>
-        </div>
-      </form>
-    </main>
-
-    <!-- Mobile Bottom Navigation -->
-    <%- include('../components/bottomNav') %>
-  </div>
-</div>
-
-<script>
-async function submitCreateUser(e) {
-  e.preventDefault();
-  
-  const username = document.getElementById('username').value.trim();
-  const email = document.getElementById('email').value.trim();
-  const fullName = document.getElementById('fullName').value.trim();
-  const password = document.getElementById('password').value;
-  const confirmPassword = document.getElementById('confirmPassword').value;
-  const role = document.querySelector('input[name="role"]:checked')?.value || 'user';
-  
-  const alertBox = document.getElementById('alertBox');
-  const btn = document.getElementById('submitBtn');
-  
-  alertBox.classList.add('hidden');
-  
-  if (!username) {
-    showAlert('Username is required', 'error');
-    return;
-  }
-  if (!password || password.length < 6) {
-    showAlert('Password must be at least 6 characters', 'error');
-    return;
-  }
-  if (password !== confirmPassword) {
-    showAlert('Passwords do not match', 'error');
-    return;
-  }
-  
-  btn.disabled = true;
-  btn.innerHTML = 'Creating...';
-  
-  try {
-    const res = await fetch('/api/admin/users', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        username: username,
-        email: email || undefined,
-        full_name: fullName || undefined,
-        password: password,
-        role: role
-      })
-    });
-    
-    const data = await res.json();
-    if (res.ok && data.success) {
-      showAlert('User account created successfully! Redirecting...', 'success');
-      setTimeout(() => {
-        window.location.href = '/admin/users';
-      }, 1000);
-    } else {
-      throw new Error(data.error || 'Failed to create user');
-    }
-  } catch(err) {
-    showAlert(err.message, 'error');
-    btn.disabled = false;
-    btn.innerHTML = 'Create Account';
-  }
-}
-
-function showAlert(msg, type) {
-  const el = document.getElementById('alertBox');
-  el.classList.remove('hidden');
-  if (type === 'success') {
-    el.style.cssText = 'background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2);';
-  } else {
-    el.style.cssText = 'background: rgba(239, 68, 68, 0.12); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.2);';
-  }
-  el.textContent = msg;
-}
-</script>
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'KineticMesh Control Plane' %></title>
+  <link rel="icon" href="<%= typeof siteLogo !== 'undefined' ? siteLogo : 'https://i.imgur.com/0DmkSi4.png' %>" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dist/assets/index.css">
+  <script>
+    window.__INITIAL_DATA__ = {
+      title: "<%= typeof title !== 'undefined' ? title : '' %>",
+      currentPage: "<%= typeof currentPage !== 'undefined' ? currentPage : '' %>",
+      siteLogo: "<%= typeof siteLogo !== 'undefined' ? siteLogo : '' %>",
+      siteName: "<%= typeof siteName !== 'undefined' ? siteName : '' %>",
+      vmId: "<%= typeof vmId !== 'undefined' ? vmId : '' %>",
+      userId: "<%= typeof userId !== 'undefined' ? userId : '' %>"
+    };
+  </script>
+</head>
+<body class="bg-background text-foreground antialiased selection:bg-muted selection:text-foreground">
+  <div id="root"></div>
+  <script type="module" src="/dist/assets/index.js"></script>
+</body>
+</html>

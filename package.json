@@ -8,7 +8,9 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "build": "pkg . --targets node22-linux-x64 --output app",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:client": "npm --prefix client run build",
+    "audit:components": "node scripts/component-audit.mjs",
+    "test": "node scripts/component-audit.mjs"
   },
   "keywords": [
     "vm",

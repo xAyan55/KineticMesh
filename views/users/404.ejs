@@ -1,45 +1,27 @@
-<%- include('../components/header', { title: '404 - Page Not Found' }) %>
-
-<main class="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
-      style="background:var(--theme-bg, #0e0e0e);">
-  <div class="al-card w-full max-w-md p-8 text-center space-y-6 rounded-2xl shadow-xl"
-       style="border:1px solid var(--theme-border, rgba(255,255,255,0.1)); background:var(--theme-bg-card, #141414);">
-    
-    <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl mx-auto shadow-inner"
-         style="background:rgba(239, 68, 68, 0.12); color:var(--theme-danger, #ef4444); border:1px solid rgba(239, 68, 68, 0.2);">
-      <%- icon('circle-alert', { class: 'w-7 h-7' }) %>
-    </div>
-
-    <div class="space-y-2">
-      <span class="text-xs font-mono font-semibold tracking-wider uppercase" style="color:var(--theme-danger, #ef4444);">
-        Error 404
-      </span>
-      <h1 class="text-2xl font-bold tracking-tight" style="color:var(--theme-text-strong, #fafafa)">
-        Page Not Found
-      </h1>
-      <p class="text-xs max-w-xs mx-auto leading-relaxed" style="color:var(--theme-text-muted, #8a8a8a)">
-        <%= typeof message !== 'undefined' && message ? message : 'The requested instance or page could not be located on this cluster.' %>
-      </p>
-    </div>
-
-    <div class="flex items-center justify-center gap-3 pt-2">
-      <button type="button" onclick="history.back()" class="al-btn-secondary text-xs px-4 py-2 flex items-center gap-1.5">
-        <%- icon('arrow-left', { class: 'w-3.5 h-3.5' }) %>
-        <span>Go Back</span>
-      </button>
-      <a href="/dashboard" class="al-btn-primary text-xs px-4 py-2 flex items-center gap-1.5">
-        <%- icon('home', { class: 'w-3.5 h-3.5' }) %>
-        <span>Dashboard</span>
-      </a>
-    </div>
-
-    <div class="pt-4 border-t flex justify-center gap-4 text-xs font-medium"
-         style="border-color:var(--theme-border-subtle, rgba(255,255,255,0.06)); color:var(--theme-text-muted, #8a8a8a);">
-      <a href="/vms" class="hover:underline">My VMs</a>
-      <span>•</span>
-      <a href="/profile" class="hover:underline">Account</a>
-      <span>•</span>
-      <a href="/admin/dashboard" class="hover:underline">Admin</a>
-    </div>
-  </div>
-</main>
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'KineticMesh Control Plane' %></title>
+  <link rel="icon" href="<%= typeof siteLogo !== 'undefined' ? siteLogo : 'https://i.imgur.com/0DmkSi4.png' %>" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dist/assets/index.css">
+  <script>
+    window.__INITIAL_DATA__ = {
+      title: "<%= typeof title !== 'undefined' ? title : '' %>",
+      currentPage: "<%= typeof currentPage !== 'undefined' ? currentPage : '' %>",
+      siteLogo: "<%= typeof siteLogo !== 'undefined' ? siteLogo : '' %>",
+      siteName: "<%= typeof siteName !== 'undefined' ? siteName : '' %>",
+      vmId: "<%= typeof vmId !== 'undefined' ? vmId : '' %>",
+      userId: "<%= typeof userId !== 'undefined' ? userId : '' %>"
+    };
+  </script>
+</head>
+<body class="bg-background text-foreground antialiased selection:bg-muted selection:text-foreground">
+  <div id="root"></div>
+  <script type="module" src="/dist/assets/index.js"></script>
+</body>
+</html>
