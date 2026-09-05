@@ -11,4 +11,15 @@ if (rootElement) {
       <App />
     </React.StrictMode>
   );
+
+  // Instantly remove #kx-boot overlay
+  const boot = document.getElementById("kx-boot");
+  if (boot) {
+    boot.classList.add("kx-boot-hidden");
+    setTimeout(() => {
+      try {
+        boot.remove();
+      } catch (e) {}
+    }, 250);
+  }
 }
