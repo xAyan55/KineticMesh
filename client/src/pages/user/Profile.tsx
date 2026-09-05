@@ -1,27 +1,22 @@
-import React, { useState, useEffect } from "react";
-import { AppShell } from "@/components/layout/AppShell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Key, Shield, User, Mail, CheckCircle2, AlertCircle } from "lucide-react";
-import { api } from "@/lib/api";
+import React, { useState } from "react";
+import { SideBar } from "@/components/theme/SideBar";
+import { NavigationBar } from "@/components/theme/NavigationBar";
+import { PageContentBlock } from "@/components/theme/elements/PageContentBlock";
+import { Field } from "@/components/theme/elements/Field";
+import { Button } from "@/components/theme/elements/Button";
+import { Alert } from "@/components/theme/elements/Alert";
+import { UserCircleIcon, KeyIcon, MailIcon, KeyIcon as KeyIconSolid } from "@heroicons/react/outline";
 
 export const Profile: React.FC = () => {
-  const [user, setUser] = useState<any>(null);
+  const initialData = (window as any).__INITIAL_DATA__ || {};
+  const user = initialData.user || { username: "Administrator", email: "admin@kinetichost.com", role: "admin" };
+
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [activeTab, setActiveTab] = useState<"ssh" | "api">("ssh");
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    api.checkAuth().then((res) => {
-      if (res && res.authenticated) {
-        setUser(res.user);
-      }
-    }).catch(() => null);
-  }, []);
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,7 +42,7 @@ export const Profile: React.FC = () => {
         const err = await res.json().catch(() => ({}));
         setStatusMsg({ type: "error", text: err.error || "Failed to update password." });
       }
-    } catch {
+    } catch (err) {
       setStatusMsg({ type: "error", text: "A network error occurred." });
     } finally {
       setLoading(false);
@@ -55,168 +50,147 @@ export const Profile: React.FC = () => {
   };
 
   return (
-    <AppShell
-      breadcrumbs={[{ label: "Account Overview" }]}
-      user={user}
-    >
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div>
-          <h2 className="text-xl font-bold font-header text-foreground">Account Overview</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Manage your account credentials, security preferences, and API access
-          </p>
-        </div>
+    <div className="min-h-screen flex h-full bg-gray-800" style={{ backgroundImage: "var(--image)" }}>
+      <SideBar />
+      <div className="w-full flex-1 flex flex-col min-w-0">
+        <NavigationBar />
 
-        {statusMsg && (
-          <div
-            className={`p-3.5 rounded-xl border text-xs font-medium flex items-center gap-2 ${
-              statusMsg.type === "success"
-                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                : "bg-rose-500/10 border-rose-500/20 text-rose-400"
-            }`}
-          >
-            {statusMsg.type === "success" ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
-            <span>{statusMsg.text}</span>
-          </div>
-        )}
+        <PageContentBlock title="Account Overview">
+          {statusMsg && (
+            <Alert type={statusMsg.type} className="mb-4">
+              {statusMsg.text}
+            </Alert>
+          )}
 
-        <div className="grid lg:grid-cols-2 gap-6">
-          {/* Account Profile Card */}
-          <Card className="bg-card/50 border-border/50 shadow-xs">
-            <CardHeader className="p-6 pb-4">
-              <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-header font-bold text-xl shadow-sm">
-                  {user?.username?.charAt(0).toUpperCase() || "A"}
-                </div>
-                <div>
-                  <CardTitle className="text-base font-header">{user?.username || "Administrator"}</CardTitle>
-                  <CardDescription className="text-xs capitalize flex items-center gap-1.5 mt-0.5">
-                    <Badge variant="secondary" className="text-[10px] uppercase font-mono">
-                      {user?.role || "User"}
-                    </Badge>
-                    <span>Account</span>
-                  </CardDescription>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-6 pt-2 space-y-4">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" /> Username
-                </label>
-                <div className="bg-background/60 p-2.5 rounded-lg border border-border/60 text-xs text-foreground font-mono">
-                  {user?.username || "admin"}
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" /> Email Address
-                </label>
-                <div className="bg-background/60 p-2.5 rounded-lg border border-border/60 text-xs text-foreground font-mono">
-                  {user?.email || "No external email configured"}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Password Update Card */}
-          <Card className="bg-card/50 border-border/50 shadow-xs">
-            <CardHeader className="p-6 pb-4">
-              <CardTitle className="text-base font-header flex items-center gap-2">
-                <Key className="w-4 h-4 text-primary" /> Update Password
-              </CardTitle>
-              <CardDescription className="text-xs">
-                Ensure your account uses a secure passkey to protect hypervisor access
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6 pt-2">
-              <form onSubmit={handlePasswordUpdate} className="space-y-3.5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground">Current Password</label>
-                  <input
-                    type="password"
-                    placeholder="Enter current password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    required
-                    className="w-full bg-background/60 border border-border/60 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/60"
+          <div className="grid lg:grid-cols-2 gap-6 mb-6">
+            {/* Left Column: Account Details & Banner */}
+            <div className="flex flex-col gap-6">
+              <div className="bg-gray-700 backdrop rounded-box overflow-hidden border border-gray-600/70 shadow-xl">
+                {/* Banner Area */}
+                <div className="w-full relative px-6 pt-5 pb-3 z-10">
+                  <div
+                    className="h-3/4 w-full absolute top-0 left-0 z-[-1]"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 25%, transparent) 100%)",
+                    }}
                   />
+                  <div className="w-[64px] h-[64px] rounded-component border-4 border-gray-700 bg-gray-900 flex items-center justify-center text-xl font-bold text-arix shadow-md">
+                    {user.username?.charAt(0).toUpperCase() || "A"}
+                  </div>
                 </div>
 
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground">New Password</label>
-                  <input
-                    type="password"
-                    placeholder="Enter new password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    required
-                    className="w-full bg-background/60 border border-border/60 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/60"
-                  />
+                <div className="p-6 pt-2">
+                  <h3 className="text-lg font-header font-semibold text-gray-100">{user.username}</h3>
+                  <p className="text-xs text-gray-400 capitalize mb-4">{user.role || "User"} Account</p>
+
+                  <div className="flex flex-col gap-3 text-xs">
+                    <div>
+                      <span className="text-gray-400 block mb-1">Username</span>
+                      <p className="bg-gray-800 p-2.5 rounded-component text-gray-200 font-mono">{user.username}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-1">Email Address</span>
+                      <p className="bg-gray-800 p-2.5 rounded-component text-gray-200 font-mono">{user.email || "No email assigned"}</p>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-semibold text-muted-foreground">Confirm New Password</label>
-                  <input
-                    type="password"
-                    placeholder="Confirm new password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="w-full bg-background/60 border border-border/60 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/60"
-                  />
-                </div>
-
-                <Button type="submit" disabled={loading} className="w-full mt-2 text-xs h-9 cursor-pointer">
-                  {loading ? "Updating..." : "Save Password Changes"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* SSH / API Tabbed Card */}
-        <Card className="bg-card/50 border-border/50 shadow-xs">
-          <CardHeader className="p-6 pb-3 border-b border-border/40">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-header">
-                {activeTab === "ssh" ? "Public SSH Keys" : "Account API Credentials"}
-              </CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant={activeTab === "ssh" ? "default" : "ghost"}
-                  onClick={() => setActiveTab("ssh")}
-                  className="text-xs h-7"
-                >
-                  SSH Keys
-                </Button>
-                <Button
-                  size="sm"
-                  variant={activeTab === "api" ? "default" : "ghost"}
-                  onClick={() => setActiveTab("api")}
-                  className="text-xs h-7"
-                >
-                  API Keys
-                </Button>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="p-6 text-xs text-muted-foreground">
+
+            {/* Right Column: Password Update */}
+            <div className="bg-gray-700 backdrop rounded-box p-6 border border-gray-600/70 shadow-xl">
+              <h3 className="text-base font-header font-semibold text-gray-100 mb-4 pb-2 border-b border-gray-600/50">
+                Update Account Password
+              </h3>
+
+              <form onSubmit={handlePasswordUpdate} className="flex flex-col gap-4">
+                <Field
+                  id="curr-pass"
+                  type="password"
+                  label="Current Password"
+                  placeholder="••••••••••••"
+                  icon={KeyIcon}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                />
+                <Field
+                  id="new-pass"
+                  type="password"
+                  label="New Password"
+                  placeholder="••••••••••••"
+                  icon={KeyIcon}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+                <Field
+                  id="confirm-pass"
+                  type="password"
+                  label="Confirm New Password"
+                  placeholder="••••••••••••"
+                  icon={KeyIcon}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+                <Button type="submit" isLoading={loading} className="mt-2">
+                  Save Changes
+                </Button>
+              </form>
+            </div>
+          </div>
+
+          {/* Bottom Card: SSH Keys & API Keys Tab */}
+          <div className="bg-gray-700 backdrop rounded-box px-6 py-5 border border-gray-600/70 shadow-xl">
+            <div className="flex items-center justify-between mb-5 border-b border-gray-600/60 pb-3">
+              <p className="text-sm text-gray-200 font-medium font-header">
+                {activeTab === "ssh" ? "Public SSH Keys" : "Account API Credentials"}
+              </p>
+              <div className="flex gap-x-4 text-xs font-medium">
+                <button
+                  onClick={() => setActiveTab("ssh")}
+                  className={`pb-1 border-b-2 transition ${
+                    activeTab === "ssh" ? "border-arix text-gray-50" : "border-transparent text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  SSH Keys
+                </button>
+                <button
+                  onClick={() => setActiveTab("api")}
+                  className={`pb-1 border-b-2 transition ${
+                    activeTab === "api" ? "border-arix text-gray-50" : "border-transparent text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  API Keys
+                </button>
+              </div>
+            </div>
+
             {activeTab === "ssh" ? (
-              <p>
-                Authorized SSH public keys are managed automatically and injected into tenant guest instances at boot time.
-              </p>
+              <div className="text-xs text-gray-300">
+                <p className="mb-4 text-gray-400">
+                  Manage your SSH authorized public keys used for automated guest key injection during deployment.
+                </p>
+                <div className="p-4 bg-gray-800/80 rounded-component border border-gray-600 text-gray-400 italic">
+                  No custom SSH keys registered yet. Keys can be injected directly into guest VM images.
+                </div>
+              </div>
             ) : (
-              <p>
-                Administrative API tokens can be provisioned through the Hypervisor Settings panel.
-              </p>
+              <div className="text-xs text-gray-300">
+                <p className="mb-4 text-gray-400">
+                  Application programmatic tokens allowing full access to your tenant virtual machines.
+                </p>
+                <div className="p-4 bg-gray-800/80 rounded-component border border-gray-600 text-gray-400 italic">
+                  API tokens are managed via the administrative control plane.
+                </div>
+              </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </PageContentBlock>
       </div>
-    </AppShell>
+    </div>
   );
 };
 
