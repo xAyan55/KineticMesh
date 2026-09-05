@@ -38,12 +38,16 @@ const termsText = (
 export default function AuthSectionThree({
   onLoginSubmit,
   onRegisterSubmit,
+  onDiscordClick,
+  onGoogleClick,
   isLoginMode = false,
   error,
   loading = false,
 }: {
   onLoginSubmit?: (data: any) => void;
   onRegisterSubmit?: (data: any) => void;
+  onDiscordClick?: () => void;
+  onGoogleClick?: () => void;
   isLoginMode?: boolean;
   error?: string | null;
   loading?: boolean;
@@ -61,6 +65,10 @@ export default function AuthSectionThree({
       if (onRegisterSubmit) onRegisterSubmit({ username, email, password });
     }
   };
+
+  const displayError = typeof error === "string" && (error.includes("<html") || error.includes("<!DOCTYPE"))
+    ? "Invalid server response. Please verify credentials or try again."
+    : error;
 
   return (
     <section className="min-h-screen bg-white p-3 text-black antialiased [font-synthesis:none] dark:bg-[#050505] dark:text-white">
@@ -83,27 +91,26 @@ export default function AuthSectionThree({
               </p>
             </div>
 
-            {error && (
+            {displayError && (
               <div className="mt-4 p-3 rounded-lg text-xs bg-red-500/10 border border-red-500/30 text-red-500 font-medium">
-                {error}
+                {displayError}
               </div>
             )}
 
             {/* Social Signup Buttons */}
             <div className="mt-8 grid gap-3 sm:grid-cols-2 sm:gap-4">
-              <a
-                href="/auth/discord"
-                className="flex h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg border border-black/15 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-black/[0.02] dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+              <button
+                type="button"
+                onClick={onDiscordClick}
+                className="flex h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg border border-black/15 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-black/[0.02] dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 cursor-pointer"
               >
                 <DiscordIcon />
                 <span className="whitespace-nowrap">Sign in with Discord</span>
-              </a>
+              </button>
               <button
                 type="button"
-                onClick={() => {
-                  window.location.href = "/auth/discord";
-                }}
-                className="flex h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg border border-black/15 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-black/[0.02] dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10"
+                onClick={onGoogleClick}
+                className="flex h-11 w-full min-w-0 items-center justify-center gap-2 rounded-lg border border-black/15 bg-white px-4 text-sm font-medium text-black transition-colors hover:bg-black/[0.02] dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 cursor-pointer"
               >
                 <GoogleIcon />
                 <span className="whitespace-nowrap">Sign up with Google</span>

@@ -15,23 +15,25 @@ export const Register: React.FC = () => {
     setError(null);
 
     try {
-      const response = await fetch("/login", {
+      const response = await fetch("/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password }),
       });
 
-      if (response.redirected) {
-        window.location.href = response.url;
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {
+        // Not a JSON response
+      }
+
+      if (response.ok && data?.success) {
+        window.location.href = "/dashboard";
         return;
       }
 
-      if (response.ok) {
-        window.location.href = "/dashboard";
-      } else {
-        const text = await response.text();
-        setError(text || "Invalid username or password.");
-      }
+      setError(data?.error || "Invalid username or password.");
     } catch (err: any) {
       setError(err.message || "A network error occurred. Please try again.");
     } finally {
@@ -39,38 +41,27 @@ export const Register: React.FC = () => {
     }
   };
 
-  const handleRegisterSubmit = async ({ username, email, password }: any) => {
-    if (!username || !password || !email) {
-      setError("Please complete all required fields.");
-      return;
-    }
+  const handleRegisterSubmit = async () => {
+    setError("Self-registration is restricted. Please contact your system administrator to provision an account, or log in with Discord.");
+  };
 
-    setLoading(true);
-    setError(null);
-
+  const handleDiscordClick = async () => {
     try {
-      const response = await fetch("/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, email, password }),
-      });
-
-      if (response.redirected) {
-        window.location.href = response.url;
-        return;
-      }
-
-      if (response.ok) {
-        window.location.href = "/dashboard";
+      setError(null);
+      const res = await fetch("/api/discord-auth-url");
+      const data = await res.json().catch(() => null);
+      if (data?.url) {
+        window.location.href = data.url;
       } else {
-        const text = await response.text();
-        setError(text || "Registration failed. Please contact the administrator.");
+        setError(data?.error || "Discord authentication is not configured on this server.");
       }
-    } catch (err: any) {
-      setError(err.message || "A network error occurred. Please try again.");
-    } finally {
-      setLoading(false);
+    } catch {
+      setError("Failed to connect to Discord authentication service.");
     }
+  };
+
+  const handleGoogleClick = () => {
+    setError("Google single sign-on is not configured on this server.");
   };
 
   return (
@@ -78,6 +69,8 @@ export const Register: React.FC = () => {
       isLoginMode={false}
       onLoginSubmit={handleLoginSubmit}
       onRegisterSubmit={handleRegisterSubmit}
+      onDiscordClick={handleDiscordClick}
+      onGoogleClick={handleGoogleClick}
       error={error}
       loading={loading}
     />
