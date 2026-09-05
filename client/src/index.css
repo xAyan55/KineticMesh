@@ -71,6 +71,16 @@
   code, pre, kbd {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
   }
+
+  input, select, textarea {
+    background-color: var(--gray800, #0f0f11);
+    color: var(--gray100, #d4d4d8);
+    border-color: var(--gray600, #27272a);
+  }
+
+  input::placeholder, textarea::placeholder {
+    color: var(--gray400, #52525b);
+  }
 }
 
 /* Arix Theme Backdrop & Card Styles */

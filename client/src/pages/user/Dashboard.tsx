@@ -108,14 +108,14 @@ export const Dashboard: React.FC = () => {
 
           {/* Controls Bar: Search & Status Filters */}
           <div className="bg-gray-700 backdrop rounded-box p-4 border border-gray-600/70 mb-6 flex flex-col sm:flex-row items-center justify-between gap-4 shadow">
-            <div className="relative w-full sm:w-80">
-              <SearchIcon className="w-4 h-4 text-gray-400 absolute top-3.5 left-3 pointer-events-none" />
+            <div className="relative w-full sm:w-80 flex items-center">
+              <SearchIcon className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
                 placeholder="Search virtual machines..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-gray-800/80 border border-gray-600 rounded-component pl-9 pr-3 py-2 text-xs text-gray-200 placeholder-gray-400 focus:outline-none focus:border-gray-400"
+                className="w-full bg-gray-800 border border-gray-600 rounded-component pl-10 pr-3.5 py-2 text-xs text-gray-200 placeholder-gray-400 focus:outline-none focus:border-gray-400 focus:bg-gray-700 focus:ring-1 focus:ring-gray-400/30 transition-colors"
               />
             </div>
 

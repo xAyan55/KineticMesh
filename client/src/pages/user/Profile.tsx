@@ -87,11 +87,11 @@ export const Profile: React.FC = () => {
                   <div className="flex flex-col gap-3 text-xs">
                     <div>
                       <span className="text-gray-400 block mb-1">Username</span>
-                      <p className="bg-gray-800 p-2.5 rounded-component text-gray-200 font-mono">{user.username}</p>
+                      <p className="bg-gray-800 p-2.5 rounded-component text-gray-200 font-mono border border-gray-600/70">{user.username}</p>
                     </div>
                     <div>
                       <span className="text-gray-400 block mb-1">Email Address</span>
-                      <p className="bg-gray-800 p-2.5 rounded-component text-gray-200 font-mono">{user.email || "No email assigned"}</p>
+                      <p className="bg-gray-800 p-2.5 rounded-component text-gray-200 font-mono border border-gray-600/70">{user.email || "No email assigned"}</p>
                     </div>
                   </div>
                 </div>
@@ -173,7 +173,7 @@ export const Profile: React.FC = () => {
                 <p className="mb-4 text-gray-400">
                   Manage your SSH authorized public keys used for automated guest key injection during deployment.
                 </p>
-                <div className="p-4 bg-gray-800/80 rounded-component border border-gray-600 text-gray-400 italic">
+                <div className="p-4 bg-gray-800 rounded-component border border-gray-600/70 text-gray-400 italic">
                   No custom SSH keys registered yet. Keys can be injected directly into guest VM images.
                 </div>
               </div>
@@ -182,7 +182,7 @@ export const Profile: React.FC = () => {
                 <p className="mb-4 text-gray-400">
                   Application programmatic tokens allowing full access to your tenant virtual machines.
                 </p>
-                <div className="p-4 bg-gray-800/80 rounded-component border border-gray-600 text-gray-400 italic">
+                <div className="p-4 bg-gray-800 rounded-component border border-gray-600/70 text-gray-400 italic">
                   API tokens are managed via the administrative control plane.
                 </div>
               </div>

@@ -10,9 +10,9 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({ className, hasE
     <input
       ref={ref}
       className={cn(
-        "appearance-none outline-none w-full min-w-0 p-3 rounded-component text-sm transition-all duration-150",
-        "bg-gray-700/80 border border-gray-600 hover:border-gray-500 text-gray-100 placeholder-gray-400",
-        "focus:border-gray-400 focus:ring-1 focus:ring-gray-400 disabled:opacity-50 disabled:cursor-not-allowed",
+        "appearance-none outline-none w-full min-w-0 px-3.5 py-2.5 rounded-component text-sm transition-all duration-150",
+        "bg-gray-800 border border-gray-600 hover:border-gray-500 text-gray-100 placeholder-gray-400",
+        "focus:border-gray-400 focus:bg-gray-700 focus:ring-1 focus:ring-gray-400/40 disabled:opacity-50 disabled:cursor-not-allowed",
         hasError && "border-danger-100 text-danger-50 focus:border-danger-200 focus:ring-danger-100",
         className
       )}

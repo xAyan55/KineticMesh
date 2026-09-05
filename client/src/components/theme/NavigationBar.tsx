@@ -45,7 +45,7 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({ vms = [], onSelect
             <div className="hidden sm:flex items-center relative">
               <select
                 aria-label="Select Virtual Machine"
-                className="bg-gray-700/70 border border-gray-600 rounded-component text-xs py-1.5 px-3 text-gray-200 focus:outline-none focus:border-gray-400"
+                className="bg-gray-800 hover:bg-gray-700 border border-gray-600 rounded-component text-xs py-1.5 px-3 text-gray-200 focus:outline-none focus:border-gray-400 cursor-pointer shadow-sm transition-colors"
                 onChange={(e) => {
                   if (e.target.value && onSelectVm) {
                     onSelectVm(e.target.value);
@@ -55,11 +55,11 @@ export const NavigationBar: React.FC<NavigationBarProps> = ({ vms = [], onSelect
                 }}
                 defaultValue=""
               >
-                <option value="" disabled>
+                <option value="" disabled className="bg-gray-800 text-gray-400">
                   Select Virtual Machine...
                 </option>
                 {filteredVms.map((vm) => (
-                  <option key={vm.id} value={vm.id}>
+                  <option key={vm.id} value={vm.id} className="bg-gray-800 text-gray-200">
                     {vm.name} ({vm.status})
                   </option>
                 ))}

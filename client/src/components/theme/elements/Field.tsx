@@ -14,18 +14,18 @@ export const Field = forwardRef<HTMLInputElement, FieldProps>(
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm text-gray-300 mb-1.5 font-normal">
+          <label className="block text-xs text-gray-300 mb-1.5 font-medium">
             {label}
           </label>
         )}
-        <div className="relative">
+        <div className="relative flex items-center">
           {Icon && (
-            <Icon className="w-5 h-5 text-gray-400 absolute top-3.5 left-3.5 pointer-events-none" />
+            <Icon className="w-4 h-4 text-gray-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           )}
           <Input
             ref={ref}
             hasError={!!error}
-            className={cn(Icon && "pl-11", className)}
+            className={cn(Icon && "pl-10", className)}
             {...props}
           />
         </div>
