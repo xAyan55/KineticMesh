@@ -1,20 +1,27 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import {
-  ServerIcon,
-  UserCircleIcon,
-  DotsVerticalIcon,
-  CogIcon,
-  LogoutIcon,
-  TerminalIcon,
-  GlobeIcon,
-  ViewGridIcon,
-  TemplateIcon,
-  UsersIcon,
-  AdjustmentsIcon,
-  ExternalLinkIcon,
-} from "@heroicons/react/outline";
-import { CopyOnClick } from "./elements/CopyOnClick";
+  Server,
+  LayoutDashboard,
+  Users,
+  Settings,
+  Layers,
+  PlusCircle,
+  LogOut,
+  Search,
+  Terminal,
+  Activity,
+  Power,
+  Globe,
+  Hash,
+} from "lucide-react";
+import {
+  WorkspaceSwitcher,
+  NavItem,
+  NavItemData,
+  NavGroupData,
+} from "@/components/ui/dashboard-sidebar";
 import { PowerButtons } from "./server/PowerButtons";
+import { api } from "@/lib/api";
 
 interface SideBarProps {
   currentVm?: {
@@ -27,264 +34,190 @@ interface SideBarProps {
 }
 
 export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = window.location.pathname;
-
   const initialData = (window as any).__INITIAL_DATA__ || {};
   const user = initialData.user || { username: "Administrator", role: "admin" };
   const isAdmin = user.role === "admin";
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  const [activeWorkspace, setActiveWorkspace] = useState("KineticMesh Local KVM");
 
   const navigate = (url: string) => {
     window.history.pushState(null, "", url);
     window.dispatchEvent(new PopStateEvent("popstate"));
   };
 
-  const isActive = (path: string) => {
-    if (path === "/dashboard" && (pathname === "/dashboard" || pathname === "/")) return true;
-    return pathname === path;
+  const handleLogout = async () => {
+    try {
+      await api.logout();
+      window.location.href = "/login";
+    } catch {
+      window.location.href = "/login";
+    }
+  };
+
+  // Build nav groups based on context
+  const navGroups: NavGroupData[] = [
+    {
+      items: [
+        { id: "search", title: "Quick Search", icon: Search, shortcut: "⌘K" },
+        { id: "overview", title: "User Overview", icon: LayoutDashboard, href: "/dashboard" },
+      ],
+    },
+    {
+      heading: "Fleet Management",
+      items: [
+        {
+          id: "vms",
+          title: "Virtual Machines",
+          icon: Server,
+          href: "/vms",
+          children: [
+            { id: "vms-list", title: "Active Instances", icon: Hash, href: "/vms" },
+            { id: "vms-deploy", title: "Deploy Instance", icon: PlusCircle, href: "/admin/vm-create" },
+          ],
+        },
+        {
+          id: "ssh-terminal",
+          title: "Web SSH Console",
+          icon: Terminal,
+          href: "/vms",
+        },
+      ],
+    },
+  ];
+
+  if (currentVm) {
+    navGroups.push({
+      heading: `Active: ${currentVm.name}`,
+      items: [
+        { id: `vm-overview`, title: "Instance Overview", icon: Server, href: `/vm/${currentVm.id}` },
+        { id: `vm-console`, title: "Serial Console", icon: Terminal, href: `/vm/${currentVm.id}/console` },
+        { id: `vm-ssh`, title: "Web SSH Terminal", icon: Terminal, href: `/vm/${currentVm.id}/ssh` },
+      ],
+    });
+  }
+
+  if (isAdmin) {
+    navGroups.push({
+      heading: "Hypervisor Control",
+      items: [
+        { id: "admin-dashboard", title: "Cluster Overview", icon: Activity, href: "/admin/dashboard", badge: "Live" },
+        { id: "admin-deploy", title: "Deploy Instance", icon: PlusCircle, href: "/admin/vm-create" },
+        { id: "admin-users", title: "User Accounts", icon: Users, href: "/admin/users" },
+        { id: "admin-templates", title: "OS Templates & ISO", icon: Layers, href: "/admin/templates" },
+        { id: "admin-settings", title: "Hypervisor Settings", icon: Settings, href: "/admin/settings" },
+      ],
+    });
+  }
+
+  const bottomItems: NavItemData[] = [
+    { id: "settings", title: "Settings", icon: Settings, shortcut: "⌘,", href: isAdmin ? "/admin/settings" : "/profile" },
+    { id: "logout", title: "Sign out", icon: LogOut },
+  ];
+
+  const findActiveId = (): string => {
+    if (currentVm) {
+      if (pathname.endsWith("/console")) return "vm-console";
+      if (pathname.endsWith("/ssh")) return "vm-ssh";
+      return "vm-overview";
+    }
+    if (pathname === "/dashboard") return "overview";
+    if (pathname === "/admin/dashboard") return "admin-dashboard";
+    if (pathname === "/admin/vm-create") return "admin-deploy";
+    if (pathname === "/admin/users") return "admin-users";
+    if (pathname === "/admin/templates") return "admin-templates";
+    if (pathname === "/admin/settings") return "admin-settings";
+    if (pathname.startsWith("/vms") || pathname.startsWith("/admin/vms")) return "vms";
+    if (pathname === "/profile") return "settings";
+    return "overview";
+  };
+
+  const activeId = findActiveId();
+
+  const handleNavSelect = (id: string) => {
+    if (id === "search") {
+      // Trigger global search palette event
+      const event = new KeyboardEvent("keydown", { key: "k", metaKey: true, bubbles: true });
+      document.dispatchEvent(event);
+      return;
+    }
+    if (id === "logout") {
+      handleLogout();
+      return;
+    }
+
+    const all = [...navGroups.flatMap((g) => g.items), ...bottomItems];
+    const findHref = (items: NavItemData[]): string | undefined => {
+      for (const item of items) {
+        if (item.id === id) return item.href;
+        if (item.children) {
+          const childHref = findHref(item.children);
+          if (childHref) return childHref;
+        }
+      }
+      return undefined;
+    };
+
+    const targetHref = findHref(all);
+    if (targetHref) {
+      navigate(targetHref);
+    }
   };
 
   return (
-    <aside className="w-[264px] flex-shrink-0 h-screen lg:flex hidden flex-col sticky top-0 p-3 z-30">
-      <div className="flex flex-col h-full rounded-2xl border border-[color-mix(in_srgb,var(--gray500)_60%,transparent)] bg-gray-700 backdrop overflow-hidden shadow-[0_20px_50px_-24px_rgba(0,0,0,0.6)]">
-        {/* Brand Top */}
-        <div className="pt-5 px-3">
-          <a
-            href="/dashboard"
-            onClick={(e) => {
-              e.preventDefault();
-              navigate("/dashboard");
-            }}
-            className="flex gap-x-2.5 items-center font-semibold text-lg text-gray-50 px-3 pb-5"
-          >
-            <span className="flex items-center justify-center rounded-xl p-1 bg-[color-mix(in_srgb,var(--primary)_12%,transparent)]">
-              <img src="/arix/logo.png" alt="KineticMesh" className="h-8 w-8 object-contain rounded-md" />
-            </span>
-            <span className="font-header tracking-tight">KineticMesh</span>
-          </a>
+    <aside className="w-[260px] flex-shrink-0 h-screen hidden md:flex flex-col sticky top-0 z-30 font-sans">
+      <div className="flex flex-col w-full h-full bg-card/60 border-r border-border/50 p-3">
+        <WorkspaceSwitcher
+          selected={activeWorkspace}
+          onSelect={setActiveWorkspace}
+          workspaces={["KineticMesh Local KVM", "Cluster Alpha (Remote)", "Dev Sandbox"]}
+          plan={isAdmin ? "Pro Hypervisor" : "KVM User Space"}
+        />
 
-          {/* Primary Nav Links */}
-          <div className="flex flex-col gap-1 mb-3">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium ${
-                isActive("/dashboard")
-                  ? "bg-arix text-gray-900 font-semibold"
-                  : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-              }`}
-            >
-              <ServerIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/dashboard") ? "text-gray-900" : "text-gray-400"}`} />
-              <span>Dashboard</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/vms")}
-              className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium ${
-                isActive("/vms")
-                  ? "bg-arix text-gray-900 font-semibold"
-                  : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-              }`}
-            >
-              <ViewGridIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/vms") ? "text-gray-900" : "text-gray-400"}`} />
-              <span>Virtual Machines</span>
-            </button>
-
-            <button
-              onClick={() => navigate("/profile")}
-              className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium ${
-                isActive("/profile")
-                  ? "bg-arix text-gray-900 font-semibold"
-                  : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-              }`}
-            >
-              <UserCircleIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/profile") ? "text-gray-900" : "text-gray-400"}`} />
-              <span>Account</span>
-            </button>
-
-            {isAdmin && (
-              <div className="mt-3 pt-3 border-t border-[color-mix(in_srgb,var(--gray500)_40%,transparent)]">
-                <span className="px-3 text-xs text-gray-400 font-semibold uppercase tracking-widest block mb-2">
-                  Administration
+        <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] flex flex-col gap-4 mt-2">
+          {navGroups.map((group, idx) => (
+            <div key={idx} className="flex flex-col gap-0.5">
+              {group.heading && (
+                <span className="px-2.5 mb-1 text-[11px] font-semibold tracking-wider text-muted-foreground/50 uppercase">
+                  {group.heading}
                 </span>
-                <button
-                  onClick={() => navigate("/admin/dashboard")}
-                  className={`w-full flex items-center px-3 py-2 gap-x-3 duration-200 rounded-xl mx-1 text-xs font-medium ${
-                    isActive("/admin/dashboard")
-                      ? "bg-arix text-gray-900 font-semibold"
-                      : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-                  }`}
-                >
-                  <CogIcon className="w-4 h-4 flex-shrink-0" />
-                  <span>Admin Overview</span>
-                </button>
-                <button
-                  onClick={() => navigate("/admin/users")}
-                  className={`w-full flex items-center px-3 py-2 gap-x-3 duration-200 rounded-xl mx-1 text-xs font-medium ${
-                    isActive("/admin/users")
-                      ? "bg-arix text-gray-900 font-semibold"
-                      : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-                  }`}
-                >
-                  <UsersIcon className="w-4 h-4 flex-shrink-0" />
-                  <span>Users Directory</span>
-                </button>
-                <button
-                  onClick={() => navigate("/admin/templates")}
-                  className={`w-full flex items-center px-3 py-2 gap-x-3 duration-200 rounded-xl mx-1 text-xs font-medium ${
-                    isActive("/admin/templates")
-                      ? "bg-arix text-gray-900 font-semibold"
-                      : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-                  }`}
-                >
-                  <TemplateIcon className="w-4 h-4 flex-shrink-0" />
-                  <span>OS Templates</span>
-                </button>
-                <button
-                  onClick={() => navigate("/admin/settings")}
-                  className={`w-full flex items-center px-3 py-2 gap-x-3 duration-200 rounded-xl mx-1 text-xs font-medium ${
-                    isActive("/admin/settings")
-                      ? "bg-arix text-gray-900 font-semibold"
-                      : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-                  }`}
-                >
-                  <AdjustmentsIcon className="w-4 h-4 flex-shrink-0" />
-                  <span>Panel Settings</span>
-                </button>
-              </div>
-            )}
-          </div>
-          <hr className="border-b border-[color-mix(in_srgb,var(--gray500)_60%,transparent)] mx-2 my-2" />
-        </div>
-
-        {/* Dynamic Context (VM Specific Details if active) */}
-        <div className="flex-1 overflow-y-auto px-2">
-          {currentVm && (
-            <div className="px-2 pt-1 pb-3">
-              <div className="flex items-center gap-x-2">
-                <div
-                  className={`w-3 h-3 rounded-full ${
-                    currentVm.status === "running"
-                      ? "bg-success-100 shadow-[0_0_8px_rgba(86,170,43,0.8)]"
-                      : "bg-danger-100"
-                  }`}
-                />
-                <span className="font-semibold text-sm text-gray-100 truncate">{currentVm.name}</span>
-              </div>
-              {currentVm.ip && (
-                <CopyOnClick text={currentVm.ip} className="mt-1">
-                  <p className="text-xs flex items-center gap-x-1 text-gray-400 hover:text-gray-200">
-                    <GlobeIcon className="w-3.5 h-3.5" />
-                    <span>{currentVm.ip}</span>
-                  </p>
-                </CopyOnClick>
               )}
-              <div className="mt-2">
-                <PowerButtons vmId={currentVm.id} status={currentVm.status} icons />
+              {group.items.map((item) => (
+                <NavItem
+                  key={item.id}
+                  item={item}
+                  activeId={activeId}
+                  onSelect={handleNavSelect}
+                />
+              ))}
+            </div>
+          ))}
+
+          {currentVm && (
+            <div className="mt-2 p-2.5 bg-background/50 rounded-lg border border-border/50 space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-foreground truncate">{currentVm.name}</span>
+                <span className={`px-1.5 py-0.5 text-[10px] rounded font-mono uppercase ${
+                  currentVm.status === "running" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+                }`}>
+                  {currentVm.status}
+                </span>
               </div>
-              <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-gray-600/60">
-                <button
-                  onClick={() => navigate(`/vm/${currentVm.id}`)}
-                  className={`flex items-center px-3 py-2 gap-x-2.5 rounded-lg text-xs font-medium ${
-                    pathname === `/vm/${currentVm.id}` ? "bg-gray-600 text-gray-50" : "text-gray-300 hover:bg-gray-600"
-                  }`}
-                >
-                  <ServerIcon className="w-4 h-4" />
-                  <span>Overview</span>
-                </button>
-                <button
-                  onClick={() => navigate(`/vm/${currentVm.id}/console`)}
-                  className={`flex items-center px-3 py-2 gap-x-2.5 rounded-lg text-xs font-medium ${
-                    pathname === `/vm/${currentVm.id}/console` ? "bg-gray-600 text-gray-50" : "text-gray-300 hover:bg-gray-600"
-                  }`}
-                >
-                  <TerminalIcon className="w-4 h-4" />
-                  <span>Serial Console</span>
-                </button>
-                <button
-                  onClick={() => navigate(`/vm/${currentVm.id}/ssh`)}
-                  className={`flex items-center px-3 py-2 gap-x-2.5 rounded-lg text-xs font-medium ${
-                    pathname === `/vm/${currentVm.id}/ssh` ? "bg-gray-600 text-gray-50" : "text-gray-300 hover:bg-gray-600"
-                  }`}
-                >
-                  <TerminalIcon className="w-4 h-4" />
-                  <span>Web SSH</span>
-                </button>
-              </div>
+              <PowerButtons vmId={currentVm.id} status={currentVm.status} icons />
             </div>
           )}
+
           {children}
         </div>
 
-        {/* User Account Bottom Pill */}
-        <div className="sticky bottom-0 p-2 pt-0" ref={dropdownRef}>
-          <div className="flex w-full justify-between items-center rounded-xl border border-[color-mix(in_srgb,var(--gray500)_60%,transparent)] bg-[color-mix(in_srgb,var(--gray800)_60%,transparent)] px-3 py-2.5 relative">
-            <a
-              href="/profile"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate("/profile");
-              }}
-              className="flex items-center gap-x-2.5 min-w-0"
-            >
-              <div className="w-8 h-8 rounded-full bg-arix/20 border border-arix/40 flex items-center justify-center text-arix font-semibold text-xs flex-shrink-0">
-                {user.username?.charAt(0).toUpperCase() || "U"}
-              </div>
-              <p className="truncate text-sm font-medium text-gray-200">{user.username || "Account"}</p>
-            </a>
-
-            <button
-              onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="text-gray-400 hover:text-gray-100 p-1.5 rounded-lg hover:bg-gray-600 duration-150 flex-shrink-0"
-            >
-              <DotsVerticalIcon className="w-5 h-5" />
-            </button>
-
-            {dropdownOpen && (
-              <div className="absolute bottom-full mb-2 right-0 w-48 bg-gray-800 border border-gray-600 rounded-xl p-1.5 shadow-2xl z-50 animate-in fade-in zoom-in-95 duration-100">
-                {isAdmin && (
-                  <button
-                    onClick={() => {
-                      setDropdownOpen(false);
-                      navigate("/admin/dashboard");
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-200 hover:bg-gray-700 rounded-lg"
-                  >
-                    <CogIcon className="w-4 h-4" />
-                    <span>Admin View</span>
-                  </button>
-                )}
-                <button
-                  onClick={() => {
-                    setDropdownOpen(false);
-                    navigate("/profile");
-                  }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-200 hover:bg-gray-700 rounded-lg"
-                >
-                  <UserCircleIcon className="w-4 h-4" />
-                  <span>Profile Settings</span>
-                </button>
-                <div className="border-t border-gray-700 my-1" />
-                <a
-                  href="/logout"
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-danger-50 hover:bg-danger-200/30 rounded-lg"
-                >
-                  <LogoutIcon className="w-4 h-4 text-danger-50" />
-                  <span>Logout</span>
-                </a>
-              </div>
-            )}
-          </div>
+        <div className="mt-auto pt-4 border-t border-border/50 flex flex-col gap-0.5">
+          {bottomItems.map((item) => (
+            <NavItem
+              key={item.id}
+              item={item}
+              activeId={activeId}
+              onSelect={handleNavSelect}
+            />
+          ))}
         </div>
       </div>
     </aside>
