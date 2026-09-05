@@ -1,217 +1,197 @@
-import * as React from "react";
-import { User, Lock, Key, Shield, ShieldCheck, Check, AlertCircle, Eye, EyeOff } from "lucide-react";
-import { AppShell } from "@/components/layout/AppShell";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Field } from "@/components/ui/field";
-import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
-import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { toast } from "@/components/ui/toast";
-import { api } from "@/lib/api";
+import React, { useState } from "react";
+import { SideBar } from "@/components/theme/SideBar";
+import { NavigationBar } from "@/components/theme/NavigationBar";
+import { PageContentBlock } from "@/components/theme/elements/PageContentBlock";
+import { Field } from "@/components/theme/elements/Field";
+import { Button } from "@/components/theme/elements/Button";
+import { Alert } from "@/components/theme/elements/Alert";
+import { UserCircleIcon, KeyIcon, MailIcon, KeyIcon as KeyIconSolid } from "@heroicons/react/outline";
 
-export function Profile() {
-  const [user, setUser] = React.useState<any>(null);
-  const [currentPassword, setCurrentPassword] = React.useState("");
-  const [newPassword, setNewPassword] = React.useState("");
-  const [confirmPassword, setConfirmPassword] = React.useState("");
-  const [securityPin, setSecurityPin] = React.useState("");
-  const [pinVerified, setPinVerified] = React.useState(false);
-  const [tokenRevealed, setTokenRevealed] = React.useState(false);
-  const [savingPassword, setSavingPassword] = React.useState(false);
+export const Profile: React.FC = () => {
+  const initialData = (window as any).__INITIAL_DATA__ || {};
+  const user = initialData.user || { username: "Administrator", email: "admin@kinetichost.com", role: "admin" };
 
-  React.useEffect(() => {
-    api.getProfile()
-      .then(setUser)
-      .catch(() => {
-        api.checkAuth().then((auth) => setUser(auth.user));
-      });
-  }, []);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [activeTab, setActiveTab] = useState<"ssh" | "api">("ssh");
+  const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const handlePasswordUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPassword || newPassword !== confirmPassword) {
-      toast({ title: "Passwords do not match", variant: "destructive" });
+    if (newPassword !== confirmPassword) {
+      setStatusMsg({ type: "error", text: "New passwords do not match." });
       return;
     }
+    setLoading(true);
+    setStatusMsg(null);
 
-    setSavingPassword(true);
     try {
-      await api.updatePassword({ currentPassword, newPassword });
-      toast({ title: "Password Updated Successfully", variant: "success" });
-      setCurrentPassword("");
-      setNewPassword("");
-      setConfirmPassword("");
-    } catch (err: any) {
-      toast({ title: "Update Failed", description: err.message, variant: "destructive" });
+      const res = await fetch("/api/user/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      if (res.ok) {
+        setStatusMsg({ type: "success", text: "Password updated successfully." });
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setStatusMsg({ type: "error", text: err.error || "Failed to update password." });
+      }
+    } catch (err) {
+      setStatusMsg({ type: "error", text: "A network error occurred." });
     } finally {
-      setSavingPassword(false);
-    }
-  };
-
-  const handleVerifyPin = () => {
-    if (securityPin.length === 6) {
-      setPinVerified(true);
-      setTokenRevealed(true);
-      toast({ title: "Security PIN Verified", variant: "success" });
-    } else {
-      toast({ title: "Invalid PIN", description: "Please enter a 6-digit confirmation PIN", variant: "destructive" });
+      setLoading(false);
     }
   };
 
   return (
-    <AppShell breadcrumbs={[{ label: "Profile & Security" }]} user={user}>
-      <div className="max-w-4xl mx-auto space-y-6">
-        {/* Profile Card Header */}
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <Avatar className="h-16 w-16 border-2 border-border">
-                {user?.discord_avatar ? (
-                  <AvatarImage src={`https://cdn.discordapp.com/avatars/${user.discord_id}/${user.discord_avatar}.png`} />
-                ) : (
-                  <AvatarFallback className="text-lg font-bold">
-                    {user?.username?.substring(0, 2).toUpperCase() || "KM"}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-              <div className="space-y-1 text-center sm:text-left">
-                <div className="flex items-center justify-center sm:justify-start gap-2">
-                  <h2 className="text-base font-bold text-foreground">{user?.username || "Operator"}</h2>
-                  <Badge variant={user?.role === "admin" ? "default" : "secondary"}>
-                    {user?.role?.toUpperCase() || "USER"}
-                  </Badge>
-                  <Badge variant="success">ACTIVE</Badge>
+    <div className="min-h-screen flex h-full bg-gray-800" style={{ backgroundImage: "var(--image)" }}>
+      <SideBar />
+      <div className="w-full flex-1 flex flex-col min-w-0">
+        <NavigationBar />
+
+        <PageContentBlock title="Account Overview">
+          {statusMsg && (
+            <Alert type={statusMsg.type} className="mb-4">
+              {statusMsg.text}
+            </Alert>
+          )}
+
+          <div className="grid lg:grid-cols-2 gap-6 mb-6">
+            {/* Left Column: Account Details & Banner */}
+            <div className="flex flex-col gap-6">
+              <div className="bg-gray-700 backdrop rounded-box overflow-hidden border border-gray-600/70 shadow-xl">
+                {/* Banner Area */}
+                <div className="w-full relative px-6 pt-5 pb-3 z-10">
+                  <div
+                    className="h-3/4 w-full absolute top-0 left-0 z-[-1]"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, var(--primary) 0%, color-mix(in srgb, var(--primary) 25%, transparent) 100%)",
+                    }}
+                  />
+                  <div className="w-[64px] h-[64px] rounded-component border-4 border-gray-700 bg-gray-900 flex items-center justify-center text-xl font-bold text-arix shadow-md">
+                    {user.username?.charAt(0).toUpperCase() || "A"}
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground font-mono">
-                  Account ID: {user?.id || 1} • {user?.email || "No email registered"}
-                </p>
-                {user?.discord_username && (
-                  <p className="text-xs text-muted-foreground">
-                    Connected Discord: <span className="font-semibold text-foreground">{user.discord_username}</span>
-                  </p>
-                )}
+
+                <div className="p-6 pt-2">
+                  <h3 className="text-lg font-header font-semibold text-gray-100">{user.username}</h3>
+                  <p className="text-xs text-gray-400 capitalize mb-4">{user.role || "User"} Account</p>
+
+                  <div className="flex flex-col gap-3 text-xs">
+                    <div>
+                      <span className="text-gray-400 block mb-1">Username</span>
+                      <p className="bg-gray-800 p-2.5 rounded-component text-gray-200 font-mono">{user.username}</p>
+                    </div>
+                    <div>
+                      <span className="text-gray-400 block mb-1">Email Address</span>
+                      <p className="bg-gray-800 p-2.5 rounded-component text-gray-200 font-mono">{user.email || "No email assigned"}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Security & Password Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Update Password Form */}
-          <Card>
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <Lock className="h-3.5 w-3.5" /> Change Password
-              </CardTitle>
-              <CardDescription className="text-[11px]">
-                Update your account authentication credentials
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-2">
-              <form onSubmit={handlePasswordUpdate} className="space-y-3">
-                <Field label="Current Password">
-                  <Input
-                    type="password"
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="h-8 text-xs font-mono"
-                  />
-                </Field>
+            {/* Right Column: Password Update */}
+            <div className="bg-gray-700 backdrop rounded-box p-6 border border-gray-600/70 shadow-xl">
+              <h3 className="text-base font-header font-semibold text-gray-100 mb-4 pb-2 border-b border-gray-600/50">
+                Update Account Password
+              </h3>
 
-                <Field label="New Password">
-                  <Input
-                    type="password"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="h-8 text-xs font-mono"
-                  />
-                </Field>
-
-                <Field label="Confirm New Password">
-                  <Input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="h-8 text-xs font-mono"
-                  />
-                </Field>
-
-                <Button type="submit" disabled={savingPassword} className="w-full h-8 text-xs font-semibold">
-                  {savingPassword ? "Updating..." : "Update Password"}
+              <form onSubmit={handlePasswordUpdate} className="flex flex-col gap-4">
+                <Field
+                  id="curr-pass"
+                  type="password"
+                  label="Current Password"
+                  placeholder="••••••••••••"
+                  icon={KeyIcon}
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                />
+                <Field
+                  id="new-pass"
+                  type="password"
+                  label="New Password"
+                  placeholder="••••••••••••"
+                  icon={KeyIcon}
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+                <Field
+                  id="confirm-pass"
+                  type="password"
+                  label="Confirm New Password"
+                  placeholder="••••••••••••"
+                  icon={KeyIcon}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+                <Button type="submit" isLoading={loading} className="mt-2">
+                  Save Changes
                 </Button>
               </form>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          {/* Session Token & Input OTP Security Verification */}
-          <Card>
-            <CardHeader className="p-4 pb-2">
-              <CardTitle className="text-xs font-semibold flex items-center gap-2">
-                <ShieldCheck className="h-3.5 w-3.5" /> Elevated Security & Token
-              </CardTitle>
-              <CardDescription className="text-[11px]">
-                Confirm identity with segmented PIN to reveal session security credentials
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-4 pt-2 space-y-4">
-              <Alert variant="info" className="py-2.5">
-                <Shield className="h-4 w-4" />
-                <AlertTitle className="text-xs">Security Verification Required</AlertTitle>
-                <AlertDescription className="text-[11px]">
-                  Enter your 6-digit confirmation PIN below to decrypt session keys.
-                </AlertDescription>
-              </Alert>
-
-              <div className="flex flex-col items-center space-y-2 pt-2">
-                <Label className="text-xs text-muted-foreground">Confirmation PIN</Label>
-                <InputOTP maxLength={6} value={securityPin} onChange={setSecurityPin}>
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
+          {/* Bottom Card: SSH Keys & API Keys Tab */}
+          <div className="bg-gray-700 backdrop rounded-box px-6 py-5 border border-gray-600/70 shadow-xl">
+            <div className="flex items-center justify-between mb-5 border-b border-gray-600/60 pb-3">
+              <p className="text-sm text-gray-200 font-medium font-header">
+                {activeTab === "ssh" ? "Public SSH Keys" : "Account API Credentials"}
+              </p>
+              <div className="flex gap-x-4 text-xs font-medium">
+                <button
+                  onClick={() => setActiveTab("ssh")}
+                  className={`pb-1 border-b-2 transition ${
+                    activeTab === "ssh" ? "border-arix text-gray-50" : "border-transparent text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  SSH Keys
+                </button>
+                <button
+                  onClick={() => setActiveTab("api")}
+                  className={`pb-1 border-b-2 transition ${
+                    activeTab === "api" ? "border-arix text-gray-50" : "border-transparent text-gray-400 hover:text-gray-200"
+                  }`}
+                >
+                  API Keys
+                </button>
               </div>
+            </div>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleVerifyPin}
-                className="w-full h-8 text-xs font-medium"
-              >
-                {tokenRevealed ? "PIN Verified" : "Verify PIN to Reveal Token"}
-              </Button>
-
-              {tokenRevealed && (
-                <div className="space-y-1.5 p-3 rounded-md bg-muted/40 border border-border animate-in fade-in-50">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] uppercase font-bold text-muted-foreground font-mono">
-                      Session Secret Signature
-                    </span>
-                    <Badge variant="success" className="text-[9px]">ACTIVE</Badge>
-                  </div>
-                  <p className="text-[11px] font-mono break-all text-foreground">
-                    km_sess_9a8f4c2e1b7d5e6a8c3d
-                  </p>
+            {activeTab === "ssh" ? (
+              <div className="text-xs text-gray-300">
+                <p className="mb-4 text-gray-400">
+                  Manage your SSH authorized public keys used for automated guest key injection during deployment.
+                </p>
+                <div className="p-4 bg-gray-800/80 rounded-component border border-gray-600 text-gray-400 italic">
+                  No custom SSH keys registered yet. Keys can be injected directly into guest VM images.
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+              </div>
+            ) : (
+              <div className="text-xs text-gray-300">
+                <p className="mb-4 text-gray-400">
+                  Application programmatic tokens allowing full access to your tenant virtual machines.
+                </p>
+                <div className="p-4 bg-gray-800/80 rounded-component border border-gray-600 text-gray-400 italic">
+                  API tokens are managed via the administrative control plane.
+                </div>
+              </div>
+            )}
+          </div>
+        </PageContentBlock>
       </div>
-    </AppShell>
+    </div>
   );
-}
+};
+
+export default Profile;

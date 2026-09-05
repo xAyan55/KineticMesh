@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Login } from "@/pages/auth/Login";
+import { Register } from "@/pages/auth/Register";
 import { Dashboard } from "@/pages/user/Dashboard";
 import { VMList } from "@/pages/user/VMList";
 import { VMDetail } from "@/pages/user/VMDetail";
@@ -28,6 +29,10 @@ export function App() {
   // Route matching against actual KineticMesh routes
   if (pathname === "/login" || pathname === "/") {
     return <Login />;
+  }
+
+  if (pathname === "/register") {
+    return <Register />;
   }
 
   if (pathname === "/dashboard") {

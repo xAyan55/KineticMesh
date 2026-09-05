@@ -1,223 +1,70 @@
-<div class="sm:flex-auto" x-data="serverHeader()">
-  <div class="flex items-center">
-    <h1 class="text-lg font-semibold leading-6 truncate max-w-[300px]" style="color:var(--theme-text-strong);">
-      <%= server.name.charAt(0).toUpperCase() + server.name.slice(1) %>
-    </h1>
-
-    <% if (typeof serverStatus !== 'undefined') { %>
-      <div class="ml-3" data-server-status-container>
-        <%- include('../components/ui/status-badge', { status: serverStatus.online ? 'online' : serverStatus.starting ? 'starting' : 'offline' }) %>
-      </div>
-    <% } %>
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'KineticMesh' %></title>
+  <meta name="theme-color" content="#0a0a0a"/>
+  <link rel="icon" href="/favicons/favicon.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dist/assets/index.css">
+  <script>
+    window.__INITIAL_DATA__ = {
+      title: "<%= typeof title !== 'undefined' ? title : '' %>",
+      currentPage: "<%= typeof currentPage !== 'undefined' ? currentPage : '' %>",
+      siteLogo: "<%= typeof siteLogo !== 'undefined' ? siteLogo : '/arix/logo.png' %>",
+      siteName: "<%= typeof siteName !== 'undefined' ? siteName : 'KineticMesh' %>",
+      vmId: "<%= typeof vmId !== 'undefined' ? vmId : '' %>",
+      userId: "<%= typeof userId !== 'undefined' ? userId : '' %>",
+      user: typeof user !== 'undefined' && user ? {
+        id: "<%= typeof user !== 'undefined' && user && user.id ? user.id : '' %>",
+        username: "<%= typeof user !== 'undefined' && user && user.username ? user.username : '' %>",
+        email: "<%= typeof user !== 'undefined' && user && user.email ? user.email : '' %>",
+        role: "<%= typeof user !== 'undefined' && user && user.role ? user.role : 'user' %>"
+      } : undefined
+    };
+  </script>
+</head>
+<body class="bg-gray-900 text-gray-200 antialiased overflow-x-hidden">
+  <div id="kx-boot" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--gray900,#0a0a0c);transition:opacity 0.35s ease;">
+    <div style="position:relative;width:64px;height:64px;">
+      <img src="/arix/logo.png" alt="logo" style="width:100%;height:100%;object-fit:contain;padding:8px;border-radius:16px;box-shadow:0 0 0 1px color-mix(in srgb, var(--primary,#fff) 30%, transparent);animation:kx-boot-pulse 1.6s ease-in-out infinite;" />
+    </div>
+    <div style="width:34px;height:34px;border-radius:999px;border:2px solid color-mix(in srgb, var(--primary,#fff) 25%, transparent);border-top-color:var(--primary,#fff);animation:kx-boot-spin 0.8s linear infinite;"></div>
   </div>
-
-  <div class="flex items-center mt-1">
-    <p class="tracking-tight text-sm truncate max-w-full sm:max-w-[400px]" style="color:var(--theme-text-muted);">
-      <%= server.description %>
-    </p>
-
-    <% if (typeof serverStatus !== 'undefined' && serverStatus.online && typeof serverStatus.startedAt !== 'undefined' && serverStatus.startedAt) { %>
-      <div class="ml-3 text-xs flex items-center" style="color:var(--theme-text-muted);" data-server-started-container>
-        <%- icon('clock', { class: 'h-3 w-3 mr-1' }) %>
-        <span data-server-started-time data-started-at="<%= serverStatus.startedAt %>">Started: <%= new Date(serverStatus.startedAt).toLocaleString() %></span>
-      </div>
-    <% } else { %>
-      <div class="ml-3 text-xs hidden items-center" style="color:var(--theme-text-muted);" data-server-started-container>
-        <%- icon('clock', { class: 'h-3 w-3 mr-1' }) %>
-        <span data-server-started-time><%= req.translations.startedUnknown || 'Started: Unknown' %></span>
-      </div>
-    <% } %>
-  </div>
-</div>
-
-<%
-function formatUptime(seconds) {
-  if (typeof seconds !== 'number' || isNaN(seconds)) {
-    return 'Unknown';
-  }
-
-  const days = Math.floor(seconds / 86400);
-  const hours = Math.floor((seconds % 86400) / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (days > 0) {
-    return `${days}d ${hours}h ${minutes}m`;
-  } else if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  } else if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  } else {
-    return `${secs}s`;
-  }
-}
-%>
-
-<% if (typeof server !== 'undefined' && server.UUID) { %>
-<div id="server-header-data" class="hidden"></div>
-<script nonce="<%= typeof nonce !== 'undefined' ? nonce : '' %>">
-  document.getElementById('server-header-data').dataset.uuid = '<%= server.UUID %>';
-  document.getElementById('server-header-data').dataset.daemonOffline = '<%= typeof serverStatus !== "undefined" && serverStatus.daemonOffline ? "true" : "false" %>';
-</script>
-<script nonce="<%= typeof nonce !== 'undefined' ? nonce : '' %>">
-function serverHeader() {
-  return {
-    init() {
-      var SECONDS_PER_DAY = 86400;
-      var SECONDS_PER_HOUR = 3600;
-      var SECONDS_PER_MINUTE = 60;
-      var TICK_INTERVAL = 1000;
-
-      var headerEl = document.getElementById('server-header-data');
-      if (!headerEl) return;
-
-      var serverUUID = headerEl.dataset.uuid;
-      if (!serverUUID) return;
-
-      function formatUptime(seconds) {
-        var days = Math.floor(seconds / SECONDS_PER_DAY);
-        var hours = Math.floor((seconds % SECONDS_PER_DAY) / SECONDS_PER_HOUR);
-        var minutes = Math.floor((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
-        var secs = Math.floor(seconds % SECONDS_PER_MINUTE);
-        if (days > 0) return days + 'd ' + hours + 'h ' + minutes + 'm';
-        if (hours > 0) return hours + 'h ' + minutes + 'm';
-        if (minutes > 0) return minutes + 'm ' + secs + 's';
-        return secs + 's';
-      }
-
-      var startedAtElement = document.querySelector('[data-server-started-time]');
-      var startTime = null;
-      if (startedAtElement && startedAtElement.dataset.startedAt) {
-        var t = new Date(startedAtElement.dataset.startedAt).getTime();
-        if (!isNaN(t)) startTime = t;
-      }
-
-      var uptimeInterval = null;
-      var localUptimeSeconds = 0;
-      var lastOnline = false;
-
-      function updateUptime(uptimeValue) {
-        var uptimeDisplay = document.getElementById('uptime-display');
-        if (!uptimeDisplay) return;
-        if (typeof uptimeValue === 'number') {
-          uptimeDisplay.textContent = formatUptime(uptimeValue);
-          localUptimeSeconds = uptimeValue;
-        } else if (startTime) {
-          var now = Date.now();
-          localUptimeSeconds = Math.floor((now - startTime) / 1000);
-          uptimeDisplay.textContent = formatUptime(localUptimeSeconds);
-        }
-      }
-
-      var STATUS_HTML = {
-        online: function (uptimeText) {
-          return '<div class="flex items-center px-2 py-1 rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm">' +
-            '<span class="relative flex h-2 w-2 mr-2">' +
-              '<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>' +
-              '<span class="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>' +
-            '</span>' +
-            '<span id="server-status-text" class="text-xs font-medium text-neutral-700 dark:text-neutral-300">' + uptimeText + '</span>' +
-          '</div>';
-        },
-        starting: '<div class="flex items-center px-2 py-1 rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm">' +
-          '<span class="relative flex h-2 w-2 mr-2">' +
-            '<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>' +
-            '<span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>' +
-          '</span>' +
-          '<span id="server-status-text" class="text-xs font-medium text-neutral-700 dark:text-neutral-300">Starting</span>' +
-        '</div>',
-        stopping: '<div class="flex items-center px-2 py-1 rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm">' +
-          '<span class="relative flex h-2 w-2 mr-2">' +
-            '<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>' +
-            '<span class="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>' +
-          '</span>' +
-          '<span id="server-status-text" class="text-xs font-medium text-neutral-700 dark:text-neutral-300">Stopping</span>' +
-        '</div>',
-        offline: '<div class="flex items-center px-2 py-1 rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 shadow-sm">' +
-          '<span class="inline-flex h-2 w-2 rounded-full bg-red-500 mr-2"></span>' +
-          '<span id="server-status-text" class="text-xs font-medium text-neutral-700 dark:text-neutral-300">Offline</span>' +
-        '</div>'
+  <style>
+    @keyframes kx-boot-spin { to { transform: rotate(360deg); } }
+    @keyframes kx-boot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+    .kx-boot-hidden { opacity: 0 !important; pointer-events: none !important; }
+  </style>
+  <script>
+    (function () {
+      var boot = document.getElementById('kx-boot');
+      if (!boot) return;
+      var hidden = false;
+      var hide = function () {
+        if (hidden) return;
+        hidden = true;
+        boot.classList.add('kx-boot-hidden');
+        setTimeout(function () { boot.remove(); }, 350);
       };
-
-      function updateServerHeaderStatus(statusData) {
-        var statusContainer = document.querySelector('[data-server-status-container]');
-        if (!statusContainer) return;
-        if (statusData && statusData.online) {
-          if (!lastOnline) {
-            var uptimeText = statusData.uptime != null ? 'Uptime: <span id="uptime-display">' + formatUptime(statusData.uptime) + '</span>' : 'Online';
-            statusContainer.innerHTML = STATUS_HTML.online(uptimeText);
-            if (statusData.uptime != null) updateUptime(statusData.uptime);
-            startLocalUptimeTicker();
-          } else {
-            if (statusData.uptime != null) updateUptime(statusData.uptime);
+      var root = document.getElementById('root');
+      if (root && 'MutationObserver' in window) {
+        var observer = new MutationObserver(function () {
+          if (root.childElementCount > 0) {
+            hide();
+            observer.disconnect();
           }
-          lastOnline = true;
-        } else if (statusData && statusData.stopping) {
-          lastOnline = false;
-          if (uptimeInterval) { clearInterval(uptimeInterval); uptimeInterval = null; }
-          statusContainer.innerHTML = STATUS_HTML.stopping;
-        } else if (statusData && statusData.starting) {
-          lastOnline = false;
-          if (uptimeInterval) { clearInterval(uptimeInterval); uptimeInterval = null; }
-          statusContainer.innerHTML = STATUS_HTML.starting;
-        } else if (statusData && statusData.daemonOffline) {
-          lastOnline = false;
-          if (uptimeInterval) { clearInterval(uptimeInterval); uptimeInterval = null; }
-          statusContainer.innerHTML = STATUS_HTML.offline;
-        } else {
-          lastOnline = false;
-          if (uptimeInterval) { clearInterval(uptimeInterval); uptimeInterval = null; }
-          statusContainer.innerHTML = STATUS_HTML.offline;
-        }
-      }
-
-      function startLocalUptimeTicker() {
-        if (uptimeInterval) clearInterval(uptimeInterval);
-        uptimeInterval = setInterval(function () {
-          if (startTime) {
-            var now = Date.now();
-            localUptimeSeconds = Math.floor((now - startTime) / 1000);
-            updateUptime(localUptimeSeconds);
-          }
-        }, TICK_INTERVAL);
-      }
-
-      var realtimeWired = false;
-      var stopStatusObserver = null;
-
-      function onRealtimeStatus(snap) {
-        if (!snap || snap.status !== 'success' || !snap.data) return;
-        var s = snap.data;
-        updateServerHeaderStatus({
-          online: s.running === true,
-          starting: s.starting === true || s.status === 'starting' || s.status === 'restarting',
-          stopping: s.stopping === true || s.status === 'stopping',
-          daemonOffline: s.daemonOffline === true,
-          uptime: typeof s.uptime === 'number' ? s.uptime : null,
-          startedAt: s.startedAt || null,
         });
+        observer.observe(root, { childList: true, subtree: true });
       }
+      setTimeout(hide, 3000);
+    })();
+  </script>
 
-      function wireRealtime() {
-        if (realtimeWired) return;
-        var rt = window.alRealtime;
-        var st = window.alState;
-        if (!rt || !st) return;
-        realtimeWired = true;
-        stopStatusObserver = st.observe('server:status:' + serverUUID, onRealtimeStatus);
-        rt.watch(serverUUID);
-        rt.watchEvents(serverUUID);
-        function teardownRealtime() {
-          if (stopStatusObserver) { stopStatusObserver(); stopStatusObserver = null; }
-          try { window.alRealtime.unwatch(serverUUID); window.alRealtime.unwatchEvents(serverUUID); } catch (e) {}
-        }
-        window.addEventListener('pagehide', teardownRealtime);
-      }
-
-      if (window.alRealtime) wireRealtime();
-      else window.addEventListener('al:realtime-ready', wireRealtime);
-    }
-  };
-}
-</script>
-<% } %>
+  <div id="root"></div>
+  <script type="module" src="/dist/assets/index.js"></script>
+</body>
+</html>

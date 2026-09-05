@@ -14,7 +14,57 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        header: ['"Space Grotesk"', '"Inter"', 'system-ui', 'sans-serif'],
+        mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+        sans: ['"Inter"', 'system-ui', 'sans-serif'],
+      },
+      borderRadius: {
+        box: 'var(--radiusBox, 10px)',
+        component: 'var(--radiusInput, 7px)',
+      },
       colors: {
+        arix: 'var(--primary, #e5e5e6)',
+        black: '#131a20',
+        gray: {
+          50: 'var(--gray50, #f4f4f5)',
+          100: 'var(--gray100, #d4d4d8)',
+          200: 'var(--gray200, #a1a1aa)',
+          300: 'var(--gray300, #71717a)',
+          400: 'var(--gray400, #52525b)',
+          500: 'var(--gray500, #3f3f46)',
+          600: 'var(--gray600, #27272a)',
+          700: 'var(--gray700, #18181b)',
+          800: 'var(--gray800, #0f0f11)',
+          900: 'var(--gray900, #08080a)',
+        },
+        neutral: {
+          50: 'var(--gray50, #f4f4f5)',
+          100: 'var(--gray100, #d4d4d8)',
+          200: 'var(--gray200, #a1a1aa)',
+          300: 'var(--gray300, #71717a)',
+          400: 'var(--gray400, #52525b)',
+          500: 'var(--gray500, #3f3f46)',
+          600: 'var(--gray600, #27272a)',
+          700: 'var(--gray700, #18181b)',
+          800: 'var(--gray800, #0f0f11)',
+          900: 'var(--gray900, #08080a)',
+        },
+        success: {
+          50: 'var(--successText, #e1ffd8)',
+          100: 'var(--successBorder, #56aa2b)',
+          200: 'var(--successBackground, #3d8f1f)',
+        },
+        danger: {
+          50: 'var(--dangerText, #ffd8d8)',
+          100: 'var(--dangerBorder, #aa2a2a)',
+          200: 'var(--dangerBackground, #8f1f20)',
+        },
+        secondary: {
+          50: 'var(--secondaryText, #b2b2c1)',
+          100: 'var(--secondaryBorder, #42425b)',
+          200: 'var(--secondaryBackground, #2b2b40)',
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
@@ -23,14 +73,6 @@ export default {
         primary: {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary))",
-          foreground: "hsl(var(--secondary-foreground))",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive))",
-          foreground: "hsl(var(--destructive-foreground))",
         },
         muted: {
           DEFAULT: "hsl(var(--muted))",
@@ -48,25 +90,6 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        sidebar: {
-          DEFAULT: "hsl(var(--sidebar-background))",
-          foreground: "hsl(var(--sidebar-foreground))",
-          primary: "hsl(var(--sidebar-primary))",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground))",
-          accent: "hsl(var(--sidebar-accent))",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground))",
-          border: "hsl(var(--sidebar-border))",
-          ring: "hsl(var(--sidebar-ring))",
-        },
-      },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
-      fontFamily: {
-        sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
-        mono: ["JetBrains Mono", "monospace"],
       },
       keyframes: {
         "accordion-down": {

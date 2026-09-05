@@ -1,613 +1,342 @@
-import * as React from "react";
-import {
-  Play,
-  Square,
-  RotateCw,
-  Terminal,
-  Key,
-  Trash2,
-  Cpu,
-  HardDrive,
-  Activity,
-  AlertTriangle,
-  Disc,
-  Clock,
-  Shield,
-  Layers,
-  ChevronRight,
-  ExternalLink,
-} from "lucide-react";
-import { AppShell } from "@/components/layout/AppShell";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ButtonGroup } from "@/components/ui/button-group";
-import { Progress } from "@/components/ui/progress";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Attachment } from "@/components/ui/attachment";
-import { Bubble } from "@/components/ui/bubble";
-import { Marker } from "@/components/ui/marker";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Calendar } from "@/components/ui/calendar";
-import { DatePicker } from "@/components/ui/date-picker";
-import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid } from "recharts";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Empty } from "@/components/ui/empty";
-import { toast } from "@/components/ui/toast";
-import { api } from "@/lib/api";
+import React, { useEffect, useState } from "react";
+import { SideBar } from "@/components/theme/SideBar";
+import { NavigationBar } from "@/components/theme/NavigationBar";
+import { SubNavigation } from "@/components/theme/SubNavigation";
+import { ServerDetailsBlock } from "@/components/theme/server/ServerDetailsBlock";
+import { StatGraphs } from "@/components/theme/server/StatGraphs";
+import { Console } from "@/components/theme/server/Console";
+import { Button } from "@/components/theme/elements/Button";
+import { Dialog } from "@/components/theme/elements/Dialog";
+import { Alert } from "@/components/theme/elements/Alert";
+import { TerminalIcon, AdjustmentsIcon, FolderIcon, TrashIcon, DocumentTextIcon, GlobeIcon } from "@heroicons/react/outline";
 
-export function VMDetail({ vmId }: { vmId: string | number }) {
-  const [vm, setVM] = React.useState<any>(null);
-  const [stats, setStats] = React.useState<any>(null);
-  const [logs, setLogs] = React.useState<any[]>([]);
-  const [isoList, setIsoList] = React.useState<any[]>([]);
-  const [loading, setLoading] = React.useState(true);
-  const [actionLoading, setActionLoading] = React.useState(false);
-  const [selectedDate, setSelectedDate] = React.useState<Date | undefined>(new Date());
-  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+interface VMDetailProps {
+  vmId: string | number;
+}
 
-  const loadVM = async () => {
-    try {
-      const [vmData, logsData, isos] = await Promise.all([
-        api.getVM(vmId),
-        api.getVMLogs(vmId).catch(() => []),
-        api.getISOList().catch(() => []),
-      ]);
-      setVM(vmData);
-      setLogs(logsData || []);
-      setIsoList(isos || []);
+export const VMDetail: React.FC<VMDetailProps> = ({ vmId }) => {
+  const [vm, setVm] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
+  const [isoList, setIsoList] = useState<string[]>([]);
+  const [selectedIso, setSelectedIso] = useState("");
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [logs, setLogs] = useState<string[]>([]);
 
-      // Fetch real telemetry if running
-      if (vmData.status === "running") {
-        api.getVMStats(vmId).then(setStats).catch(() => {});
-      }
-    } catch (err: any) {
-      toast({
-        title: "Error Loading VM",
-        description: err.message,
-        variant: "destructive",
+  const fetchVm = () => {
+    fetch(`/api/vms/${vmId}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setVm(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error loading VM:", err);
+        setLoading(false);
       });
-    } finally {
-      setLoading(false);
-    }
   };
 
-  React.useEffect(() => {
-    loadVM();
-    const interval = setInterval(() => {
-      if (vm?.status === "running") {
-        api.getVMStats(vmId).then(setStats).catch(() => {});
-      }
-    }, 5000);
-    return () => clearInterval(interval);
+  useEffect(() => {
+    fetchVm();
+    fetch("/api/iso-list")
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setIsoList(data);
+        else if (data && Array.isArray(data.isos)) setIsoList(data.isos);
+      })
+      .catch(() => {});
+
+    fetch(`/api/vms/${vmId}/logs`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) setLogs(data);
+        else if (data && Array.isArray(data.logs)) setLogs(data.logs);
+      })
+      .catch(() => {});
   }, [vmId]);
 
-  const handleStart = async () => {
-    setActionLoading(true);
+  const handleAttachIso = async () => {
+    if (!selectedIso) return;
     try {
-      await api.startVM(vmId);
-      toast({ title: "VM Started", variant: "success" });
-      loadVM();
-    } catch (err: any) {
-      toast({ title: "Start Failed", description: err.message, variant: "destructive" });
-    } finally {
-      setActionLoading(false);
+      await fetch(`/api/vms/${vmId}/iso/attach`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ iso: selectedIso }),
+      });
+      fetchVm();
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const handleStop = async (force = false) => {
-    setActionLoading(true);
+  const handleDetachIso = async () => {
     try {
-      await api.stopVM(vmId, force);
-      toast({ title: force ? "VM Force Stopped" : "VM Gracefully Stopped", variant: "success" });
-      loadVM();
-    } catch (err: any) {
-      toast({ title: "Stop Failed", description: err.message, variant: "destructive" });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleRestart = async () => {
-    setActionLoading(true);
-    try {
-      await api.restartVM(vmId);
-      toast({ title: "VM Restarted", variant: "success" });
-      loadVM();
-    } catch (err: any) {
-      toast({ title: "Restart Failed", description: err.message, variant: "destructive" });
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleDetachISO = async () => {
-    try {
-      await api.detachISO(vmId);
-      toast({ title: "ISO Detached", variant: "success" });
-      loadVM();
-    } catch (err: any) {
-      toast({ title: "Detach Failed", description: err.message, variant: "destructive" });
+      await fetch(`/api/vms/${vmId}/iso/detach`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      fetchVm();
+    } catch (err) {
+      console.error(err);
     }
   };
 
   const handleDelete = async () => {
+    setDeleting(true);
     try {
-      await api.deleteVM(vmId);
-      toast({ title: "VM Deleted", variant: "success" });
-      window.location.href = "/vms";
-    } catch (err: any) {
-      toast({ title: "Delete Failed", description: err.message, variant: "destructive" });
+      const res = await fetch(`/api/vms/${vmId}`, { method: "DELETE" });
+      if (res.ok) {
+        window.location.href = "/vms";
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeleting(false);
+      setDeleteModalOpen(false);
     }
   };
 
   if (loading) {
     return (
-      <AppShell breadcrumbs={[{ label: "Virtual Machines", href: "/vms" }, { label: "Loading..." }]}>
-        <div className="max-w-5xl mx-auto space-y-4">
-          <Skeleton className="h-12 w-1/3" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      </AppShell>
+      <div className="min-h-screen flex items-center justify-center bg-gray-800">
+        <div className="w-8 h-8 rounded-full border-2 border-arix border-t-transparent animate-spin" />
+      </div>
     );
   }
 
   if (!vm) {
     return (
-      <AppShell breadcrumbs={[{ label: "Virtual Machines", href: "/vms" }, { label: "Not Found" }]}>
-        <div className="max-w-5xl mx-auto">
-          <Empty
-            title="Virtual Machine Not Found"
-            description="The requested virtual machine could not be located on this hypervisor."
-            action={<Button onClick={() => (window.location.href = "/vms")}>Return to Fleet</Button>}
-          />
-        </div>
-      </AppShell>
+      <div className="min-h-screen flex items-center justify-center bg-gray-800 text-gray-300">
+        <p>Virtual machine #{vmId} not found.</p>
+      </div>
     );
   }
 
-  const isRunning = vm.status === "running";
-  const cpuPercent = stats?.cpu_percent || (isRunning ? 12 : 0);
-  const memPercent = stats?.memory_percent || (isRunning ? 28 : 0);
-
-  const chartData = [
-    { time: "-5m", cpu: isRunning ? Math.max(5, cpuPercent - 6) : 0, memory: isRunning ? memPercent : 0 },
-    { time: "-4m", cpu: isRunning ? Math.max(8, cpuPercent + 4) : 0, memory: isRunning ? memPercent : 0 },
-    { time: "-3m", cpu: isRunning ? Math.max(5, cpuPercent - 2) : 0, memory: isRunning ? memPercent : 0 },
-    { time: "-2m", cpu: isRunning ? Math.max(7, cpuPercent + 5) : 0, memory: isRunning ? memPercent : 0 },
-    { time: "-1m", cpu: isRunning ? cpuPercent : 0, memory: isRunning ? memPercent : 0 },
-    { time: "Now", cpu: isRunning ? cpuPercent : 0, memory: isRunning ? memPercent : 0 },
-  ];
-
   return (
-    <AppShell
-      breadcrumbs={[
-        { label: "Virtual Machines", href: "/vms" },
-        { label: vm.name || `VM ${vm.vm_id}` },
-      ]}
-    >
-      <div className="max-w-5xl mx-auto space-y-6">
-        {/* Header with Identity & Power Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border pb-4">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2.5">
-              <h1 className="text-xl font-bold tracking-tight text-foreground">
-                {vm.name || `vm-${vm.vm_id}`}
-              </h1>
-              <Badge
-                variant={
-                  isRunning
-                    ? "running"
-                    : vm.status === "stopped"
-                    ? "stopped"
-                    : "error"
-                }
-              >
-                {vm.status}
-              </Badge>
-              {vm.is_tcg && (
-                <Badge variant="warning">TCG Software Emulation</Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground font-mono">
-              Instance ID: {vm.vm_id} • OS: {vm.os_type || "Generic"} • SSH Port: {vm.ssh_port || 2222}
-            </p>
-          </div>
+    <div className="min-h-screen flex h-full bg-gray-800" style={{ backgroundImage: "var(--image)" }}>
+      <SideBar currentVm={vm} />
+      <div className="w-full flex-1 flex flex-col min-w-0">
+        <NavigationBar />
 
-          <div className="flex items-center gap-2">
-            <ButtonGroup>
-              {isRunning ? (
-                <>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={actionLoading}
-                    onClick={() => handleStop(false)}
-                    className="gap-1 text-xs"
-                  >
-                    <Square className="h-3 w-3 text-amber-400" />
-                    <span>Stop</span>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={actionLoading}
-                    onClick={handleRestart}
-                    className="gap-1 text-xs"
-                  >
-                    <RotateCw className="h-3 w-3" />
-                    <span>Restart</span>
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="default"
-                  size="sm"
-                  disabled={actionLoading}
-                  onClick={handleStart}
-                  className="gap-1 text-xs bg-emerald-500 hover:bg-emerald-600 text-black font-semibold"
-                >
-                  <Play className="h-3.5 w-3.5 fill-current" />
-                  <span>Start Instance</span>
-                </Button>
-              )}
-            </ButtonGroup>
+        <SubNavigation
+          vm={vm}
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          onRefresh={fetchVm}
+        />
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => (window.location.href = `/vm/${vm.vm_id}/console`)}
-              className="gap-1 text-xs"
-            >
-              <Terminal className="h-3.5 w-3.5" />
-              <span>Console</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => (window.location.href = `/vm/${vm.vm_id}/ssh`)}
-              className="gap-1 text-xs"
-            >
-              <Key className="h-3.5 w-3.5" />
-              <span>SSH</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Hypervisor Warning Alert */}
-        {vm.is_tcg && (
-          <Alert variant="warning">
-            <AlertTriangle className="h-4 w-4" />
-            <AlertTitle className="text-xs">Software Emulation Active</AlertTitle>
-            <AlertDescription className="text-[11px]">
-              This virtual machine is running under QEMU TCG software emulation rather than hardware
-              accelerated KVM. Performance may be degraded.
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Tabs for Deep Management */}
-        <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 max-w-md">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="hardware">Hardware</TabsTrigger>
-            <TabsTrigger value="storage">Storage & ISO</TabsTrigger>
-            <TabsTrigger value="activity">Audit Logs</TabsTrigger>
-            <TabsTrigger value="danger">Danger Zone</TabsTrigger>
-          </TabsList>
-
+        <main className="w-full px-4 pb-12 mx-auto max-w-[1240px]">
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-4 pt-2">
-            {/* Live Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-xs font-semibold flex items-center justify-between">
-                    <span>CPU Utilization</span>
-                    <span className="font-mono text-muted-foreground">{cpuPercent}%</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 space-y-2">
-                  <Progress value={cpuPercent} />
-                  <p className="text-[10px] text-muted-foreground font-mono">
-                    Allocated: {vm.cores || 1} vCPU ({vm.cpu_model || "Host default"})
-                  </p>
-                </CardContent>
-              </Card>
+          {activeTab === "overview" && (
+            <div className="flex flex-col gap-6">
+              <ServerDetailsBlock
+                cpu={vm.cpu_usage || 0}
+                cpuLimit={vm.cpu_limit || 100}
+                memory={vm.ram || 512}
+                memoryLimit={vm.ram_limit || 1024}
+                disk={vm.disk || 10}
+                diskLimit={vm.disk_limit || 20}
+                status={vm.status}
+              />
 
-              <Card>
-                <CardHeader className="p-4 pb-2">
-                  <CardTitle className="text-xs font-semibold flex items-center justify-between">
-                    <span>Memory Allocation</span>
-                    <span className="font-mono text-muted-foreground">{memPercent}%</span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 space-y-2">
-                  <Progress value={memPercent} />
-                  <p className="text-[10px] text-muted-foreground font-mono">
-                    Allocated: {vm.memory || 1024} MB RAM
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Real-time Telemetry Chart */}
-            <Card>
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-xs font-semibold">Instance Real-time Telemetry</CardTitle>
-                <CardDescription className="text-[11px]">
-                  CPU and Memory throughput over time
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4">
-                <ChartContainer
-                  config={{
-                    cpu: { label: "CPU %", color: "hsl(var(--primary))" },
-                    memory: { label: "RAM %", color: "hsl(var(--muted-foreground))" },
-                  }}
-                  className="h-[180px] w-full"
-                >
-                  <AreaChart data={chartData} margin={{ top: 5, right: 10, left: -25, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis dataKey="time" stroke="hsl(var(--muted-foreground))" fontSize={10} />
-                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={10} domain={[0, 100]} />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Area
-                      type="monotone"
-                      dataKey="cpu"
-                      stroke="hsl(var(--primary))"
-                      strokeWidth={1.5}
-                      fill="hsl(var(--primary)/0.15)"
-                    />
-                  </AreaChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
-
-            {/* Lifecycle Status Timeline using Marker */}
-            <Card>
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-xs font-semibold">Execution State Milestones</CardTitle>
-                <CardDescription className="text-[11px]">
-                  Authoritative hypervisor state transitions
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-6 overflow-x-auto py-2">
-                  <Marker status="success" label="Provisioned" time={vm.created_at || "Initial"} />
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <Marker
-                    status={isRunning ? "success" : "default"}
-                    label="Runtime Execution"
-                    time={isRunning ? "Active" : "Offline"}
-                  />
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <Marker
-                    status={isRunning ? "active" : "default"}
-                    label="Socket Listener"
-                    time={`Port ${vm.ssh_port || 2222}`}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Hardware Tab with Accordion */}
-          <TabsContent value="hardware" className="space-y-4 pt-2">
-            <Card>
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-xs font-semibold">Hardware Configuration</CardTitle>
-                <CardDescription className="text-[11px]">
-                  Virtual hardware specifications and motherboard emulation parameters
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs">
-                  <div className="p-3 rounded-md bg-muted/40 border border-border">
-                    <span className="text-[10px] text-muted-foreground">vCPU Cores</span>
-                    <p className="font-mono font-semibold mt-1">{vm.cores || 1} Cores</p>
-                  </div>
-                  <div className="p-3 rounded-md bg-muted/40 border border-border">
-                    <span className="text-[10px] text-muted-foreground">System RAM</span>
-                    <p className="font-mono font-semibold mt-1">{vm.memory || 1024} MB</p>
-                  </div>
-                  <div className="p-3 rounded-md bg-muted/40 border border-border">
-                    <span className="text-[10px] text-muted-foreground">Virtual Storage</span>
-                    <p className="font-mono font-semibold mt-1">{vm.disk_size || 20} GB</p>
-                  </div>
-                </div>
-
-                {/* Advanced Hardware Details in Accordion */}
-                <Accordion type="single" collapsible className="w-full">
-                  <AccordionItem value="smbios">
-                    <AccordionTrigger>SMBIOS & OEM Metadata</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-2 text-xs font-mono">
-                        <div>Manufacturer: {vm.smbios_manufacturer || "QEMU Standard PC"}</div>
-                        <div>Product Name: {vm.smbios_product || "KineticMesh Hypervisor"}</div>
-                        <div>UUID: {vm.uuid || `km-${vm.vm_id}-uuid`}</div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="architecture">
-                    <AccordionTrigger>CPU Model & Features</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-2 text-xs font-mono">
-                        <div>Emulated Model: {vm.cpu_model || "host"}</div>
-                        <div>Custom CPU Name: {vm.custom_cpu_name || "Host Native Passthrough"}</div>
-                        <div>ACPI Support: {vm.enable_acpi ? "Enabled" : "Disabled"}</div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-
-                  <AccordionItem value="network">
-                    <AccordionTrigger>Network Interface & MAC</AccordionTrigger>
-                    <AccordionContent>
-                      <div className="space-y-2 text-xs font-mono">
-                        <div>MAC Address: {vm.mac_address || "52:54:00:12:34:56"}</div>
-                        <div>Network Type: {vm.network_type || "User NAT with Port Forwarding"}</div>
-                        <div>SSH Port: {vm.ssh_port || 2222}</div>
-                      </div>
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Storage & Attachment Tab */}
-          <TabsContent value="storage" className="space-y-4 pt-2">
-            <Card>
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-xs font-semibold">Mounted Optical Media & ISO</CardTitle>
-                <CardDescription className="text-[11px]">
-                  Manage CD-ROM attachment and virtual drive configuration
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 space-y-3">
-                {vm.iso_file ? (
-                  <Attachment
-                    name={vm.iso_file}
-                    size="Mounted Optical Disk"
-                    type="ISO Image"
-                    icon="disc"
-                    onRemove={handleDetachISO}
-                  />
-                ) : (
-                  <Empty
-                    icon={<Disc className="h-5 w-5" />}
-                    title="No Media Attached"
-                    description="No CD-ROM installer image is currently mounted to this instance."
-                  />
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Audit Logs Tab with Calendar & Bubble */}
-          <TabsContent value="activity" className="space-y-4 pt-2">
-            <Card>
-              <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between">
-                <div>
-                  <CardTitle className="text-xs font-semibold">Instance Execution History</CardTitle>
-                  <CardDescription className="text-[11px]">
-                    Authoritative system audit entries
-                  </CardDescription>
-                </div>
-                <DatePicker
-                  date={selectedDate}
-                  onSelect={setSelectedDate}
-                  placeholder="Filter by date"
+              <div className="grid lg:grid-cols-3 gap-4">
+                <StatGraphs
+                  cpuUsage={vm.cpu_usage || 0}
+                  memoryUsage={vm.ram || 512}
+                  memoryLimit={vm.ram_limit || 1024}
                 />
-              </CardHeader>
-              <CardContent className="p-4 space-y-3">
-                {logs.length > 0 ? (
-                  logs.slice(0, 10).map((log, idx) => (
-                    <Bubble
-                      key={idx}
-                      variant="default"
-                      sender={log.action || "SYSTEM"}
-                      time={log.created_at || "Recorded"}
-                    >
-                      {log.details || log.message || "VM state updated successfully."}
-                    </Bubble>
-                  ))
-                ) : (
-                  <div className="space-y-2">
-                    <Bubble variant="default" sender="HYPERVISOR" time="Event Initial">
-                      Virtual Machine instance initialized and registered in database.
-                    </Bubble>
-                    <Bubble variant="muted" sender="NETWORK" time="Port Forward">
-                      SSH port {vm.ssh_port || 2222} binding allocated for external access.
-                    </Bubble>
+              </div>
+
+              {/* Hardware Quick Summary Card */}
+              <div className="bg-gray-700 backdrop rounded-box p-6 border border-gray-600/70 shadow-lg">
+                <h3 className="text-base font-header font-semibold text-gray-100 mb-4 pb-2 border-b border-gray-600/50">
+                  Guest Configuration Details
+                </h3>
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs">
+                  <div>
+                    <span className="text-gray-400 block mb-0.5">Operating System</span>
+                    <span className="text-gray-200 font-medium">{vm.template || "Standard Image"}</span>
                   </div>
+                  <div>
+                    <span className="text-gray-400 block mb-0.5">CPU Model</span>
+                    <span className="text-gray-200 font-medium">{vm.cpu_model || "host-passthrough"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block mb-0.5">Network Mode</span>
+                    <span className="text-gray-200 font-medium">{vm.network_type || "User NAT / Port Forwarding"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block mb-0.5">MAC Address</span>
+                    <span className="font-mono text-gray-200">{vm.mac_address || "52:54:00:12:34:56"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block mb-0.5">ACPI Support</span>
+                    <span className="text-gray-200 font-medium">{vm.enable_acpi !== false ? "Enabled" : "Disabled"}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-400 block mb-0.5">SMBIOS Manufacturer</span>
+                    <span className="text-gray-200 font-medium">{vm.smbios_manufacturer || "KineticMesh QEMU"}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Console Tab */}
+          {activeTab === "console" && (
+            <div className="flex flex-col gap-6">
+              <Console vmId={vmId} />
+              <div className="grid lg:grid-cols-3 gap-4">
+                <StatGraphs cpuUsage={vm.cpu_usage || 0} memoryUsage={vm.ram || 512} />
+              </div>
+            </div>
+          )}
+
+          {/* SSH Tab */}
+          {activeTab === "ssh" && (
+            <div className="bg-gray-700 backdrop rounded-box p-6 border border-gray-600/70 shadow-lg">
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-600/50">
+                <TerminalIcon className="w-5 h-5 text-arix" />
+                <h3 className="text-base font-header font-semibold text-gray-100">Web SSH Session</h3>
+              </div>
+              <p className="text-xs text-gray-300 mb-4">
+                Direct SSH connection to guest port {vm.ssh_port || 22}. Host address: {vm.ip || "127.0.0.1"}
+              </p>
+              <div className="h-[480px] bg-gray-900 border border-gray-700 rounded-box flex items-center justify-center">
+                <Console vmId={vmId} />
+              </div>
+            </div>
+          )}
+
+          {/* Hardware Specs Tab */}
+          {activeTab === "hardware" && (
+            <div className="bg-gray-700 backdrop rounded-box p-6 border border-gray-600/70 shadow-lg">
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-600/50">
+                <AdjustmentsIcon className="w-5 h-5 text-arix" />
+                <h3 className="text-base font-header font-semibold text-gray-100">Virtual Machine Hardware</h3>
+              </div>
+              <div className="grid md:grid-cols-2 gap-6 text-sm">
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1 font-medium">Allocated vCPU Cores</label>
+                  <p className="bg-gray-800 p-3 rounded-component text-gray-100 font-mono">{vm.cpu || 1} vCPU</p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1 font-medium">Assigned RAM Memory</label>
+                  <p className="bg-gray-800 p-3 rounded-component text-gray-100 font-mono">{vm.ram || 512} MB</p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1 font-medium">Root Disk Capacity</label>
+                  <p className="bg-gray-800 p-3 rounded-component text-gray-100 font-mono">{vm.disk || 10} GB</p>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-400 block mb-1 font-medium">Emulated CPU Architecture</label>
+                  <p className="bg-gray-800 p-3 rounded-component text-gray-100 font-mono">{vm.cpu_model || "qemu64"}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ISO Storage Tab */}
+          {activeTab === "storage" && (
+            <div className="bg-gray-700 backdrop rounded-box p-6 border border-gray-600/70 shadow-lg">
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-600/50">
+                <FolderIcon className="w-5 h-5 text-arix" />
+                <h3 className="text-base font-header font-semibold text-gray-100">CD-ROM / Optical Media</h3>
+              </div>
+              <p className="text-xs text-gray-300 mb-4">
+                Attach an operating system installation ISO or live recovery media to the virtual optical drive.
+              </p>
+
+              <div className="flex flex-col sm:flex-row items-center gap-3 mb-6">
+                <select
+                  value={selectedIso}
+                  onChange={(e) => setSelectedIso(e.target.value)}
+                  className="bg-gray-800 border border-gray-600 rounded-component p-2.5 text-xs text-gray-200 flex-1 w-full"
+                >
+                  <option value="">Select available ISO image...</option>
+                  {isoList.map((iso) => (
+                    <option key={iso} value={iso}>
+                      {iso}
+                    </option>
+                  ))}
+                </select>
+                <Button onClick={handleAttachIso} disabled={!selectedIso} size="small">
+                  Mount ISO
+                </Button>
+                {vm.mounted_iso && (
+                  <Button.Danger onClick={handleDetachIso} size="small">
+                    Eject Media
+                  </Button.Danger>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </div>
 
-          {/* Danger Zone Tab */}
-          <TabsContent value="danger" className="space-y-4 pt-2">
-            <Card className="border-destructive/40 bg-destructive/5">
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-xs font-semibold text-destructive">
-                  Destructive Operations
-                </CardTitle>
-                <CardDescription className="text-[11px]">
-                  Irreversible administrative operations for this virtual machine
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 space-y-4">
-                <div className="flex items-center justify-between border-b border-border/50 pb-3">
+              {vm.mounted_iso && (
+                <div className="p-4 bg-gray-800/80 rounded-component border border-gray-600 text-xs text-gray-200 flex items-center justify-between">
                   <div>
-                    <h5 className="text-xs font-semibold text-foreground">Force Power Cut</h5>
-                    <p className="text-[11px] text-muted-foreground">
-                      Immediately terminate the hypervisor thread without ACPI shutdown.
-                    </p>
+                    <span className="text-gray-400 block">Currently Mounted ISO:</span>
+                    <span className="font-mono text-arix">{vm.mounted_iso}</span>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleStop(true)}
-                    className="text-amber-400 border-amber-500/40 hover:bg-amber-500/10 text-xs"
-                  >
-                    Force Stop
-                  </Button>
+                  <span className="text-success-50 font-semibold uppercase text-[10px] bg-success-200/30 px-2 py-1 rounded">
+                    Mounted
+                  </span>
                 </div>
+              )}
+            </div>
+          )}
 
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h5 className="text-xs font-semibold text-destructive">Destroy Virtual Machine</h5>
-                    <p className="text-[11px] text-muted-foreground">
-                      Permanently delete this instance, storage volumes, and network bindings.
-                    </p>
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => setDeleteDialogOpen(true)}
-                    className="text-xs"
-                  >
-                    Destroy VM
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+          {/* Logs Tab */}
+          {activeTab === "logs" && (
+            <div className="bg-gray-700 backdrop rounded-box p-6 border border-gray-600/70 shadow-lg">
+              <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-600/50">
+                <DocumentTextIcon className="w-5 h-5 text-arix" />
+                <h3 className="text-base font-header font-semibold text-gray-100">Execution Audit Logs</h3>
+              </div>
+              <div className="bg-gray-900 p-4 rounded-box font-mono text-xs text-gray-300 h-80 overflow-y-auto space-y-2">
+                {logs.length === 0 ? (
+                  <p className="text-gray-500 italic">No audit records found for VM #{vmId}.</p>
+                ) : (
+                  logs.map((log: any, i) => (
+                    <div key={i} className="border-b border-gray-800 pb-1">
+                      <span className="text-gray-500">[{typeof log === "string" ? "LOG" : log.timestamp || "INFO"}]</span>{" "}
+                      <span>{typeof log === "string" ? log : log.message || JSON.stringify(log)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
 
-        {/* Delete Alert Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Destroy Virtual Machine</AlertDialogTitle>
-              <AlertDialogDescription>
-                Are you sure you want to permanently delete {vm.name}? All disk data will be
-                unrecoverable.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={handleDelete}>
-                Destroy VM
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          {/* Danger Zone */}
+          <div className="mt-8 bg-danger-200/20 border border-danger-100/50 rounded-box p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <h4 className="text-base font-semibold text-danger-50 font-header">Terminate Virtual Machine</h4>
+                <p className="text-xs text-gray-300 mt-0.5">
+                  Irreversibly delete this virtual machine, its storage disk image, and released port mappings.
+                </p>
+              </div>
+              <Button.Danger onClick={() => setDeleteModalOpen(true)}>
+                <TrashIcon className="w-4 h-4 mr-1.5" />
+                <span>Delete VM</span>
+              </Button.Danger>
+            </div>
+          </div>
+        </main>
       </div>
-    </AppShell>
+
+      <Dialog.Confirm
+        open={deleteModalOpen}
+        title={`Delete Virtual Machine ${vm.name}?`}
+        onClose={() => setDeleteModalOpen(false)}
+        confirm="Delete Permanently"
+        onConfirmed={handleDelete}
+        isLoading={deleting}
+      >
+        Are you sure you want to delete <strong>{vm.name}</strong>? This action will permanently wipe all disk volumes and cannot be undone.
+      </Dialog.Confirm>
+    </div>
   );
-}
+};
+
+export default VMDetail;

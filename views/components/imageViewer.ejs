@@ -1,121 +1,70 @@
-<!-- Image Viewer Modal Component -->
-<div id="imageViewerModal" class="al-sheet-overlay al-modal-overlay fixed inset-0 z-50 hidden items-center justify-center" aria-hidden="true">
-    <div id="imageViewerPanel" class="al-sheet-panel al-modal-panel rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col border" role="dialog" aria-modal="true" aria-labelledby="imageViewerTitle" tabindex="-1" style="background:var(--theme-bg-card);">
-        <div class="al-sheet-header">
-            <h2 id="imageViewerTitle" class="text-xl font-medium truncate" style="color:var(--theme-text-strong);"></h2>
-            <button type="button" onclick="closeImageViewer()" class="hover:opacity-75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 rounded-lg p-1 transition min-w-[44px] min-h-[44px] flex items-center justify-center shrink-0" aria-label="Close image viewer" style="color:var(--theme-text-muted);">
-                <%- icon('x', { class: 'h-6 w-6' }) %>
-            </button>
-        </div>
-        <div class="flex-1 min-h-0 overflow-auto flex items-center justify-center p-2">
-            <img id="imageViewerContent" class="max-w-full max-h-[calc(90vh-120px)] object-contain" alt="Image preview">
-        </div>
-        <div class="al-sheet-footer justify-between">
-            <div class="text-sm" style="color:var(--theme-text-muted);">
-                <span id="imageViewerSize"></span>
-            </div>
-            <div class="flex gap-2">
-                <button type="button" id="imageViewerDownload" onclick="downloadViewedImage()" class="px-4 py-2 rounded-xl transition inline-flex items-center gap-2 outline-none hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent" style="background:var(--theme-btn-primary-bg);color:var(--theme-btn-primary-text);">
-                    <%- icon('download', { class: 'size-4', strokeWidth: 1.5 }) %>
-                    Download
-                </button>
-                <button type="button" onclick="closeImageViewer()" class="px-4 py-2 rounded-xl transition inline-flex items-center gap-2 outline-none hover:opacity-90 active:scale-95 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent" style="background:var(--theme-btn-secondary-bg);color:var(--theme-btn-secondary-text);">
-                    <%- icon('x', { class: 'size-4', strokeWidth: 1.5 }) %>
-                    Close
-                </button>
-            </div>
-        </div>
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'KineticMesh' %></title>
+  <meta name="theme-color" content="#0a0a0a"/>
+  <link rel="icon" href="/favicons/favicon.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dist/assets/index.css">
+  <script>
+    window.__INITIAL_DATA__ = {
+      title: "<%= typeof title !== 'undefined' ? title : '' %>",
+      currentPage: "<%= typeof currentPage !== 'undefined' ? currentPage : '' %>",
+      siteLogo: "<%= typeof siteLogo !== 'undefined' ? siteLogo : '/arix/logo.png' %>",
+      siteName: "<%= typeof siteName !== 'undefined' ? siteName : 'KineticMesh' %>",
+      vmId: "<%= typeof vmId !== 'undefined' ? vmId : '' %>",
+      userId: "<%= typeof userId !== 'undefined' ? userId : '' %>",
+      user: typeof user !== 'undefined' && user ? {
+        id: "<%= typeof user !== 'undefined' && user && user.id ? user.id : '' %>",
+        username: "<%= typeof user !== 'undefined' && user && user.username ? user.username : '' %>",
+        email: "<%= typeof user !== 'undefined' && user && user.email ? user.email : '' %>",
+        role: "<%= typeof user !== 'undefined' && user && user.role ? user.role : 'user' %>"
+      } : undefined
+    };
+  </script>
+</head>
+<body class="bg-gray-900 text-gray-200 antialiased overflow-x-hidden">
+  <div id="kx-boot" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--gray900,#0a0a0c);transition:opacity 0.35s ease;">
+    <div style="position:relative;width:64px;height:64px;">
+      <img src="/arix/logo.png" alt="logo" style="width:100%;height:100%;object-fit:contain;padding:8px;border-radius:16px;box-shadow:0 0 0 1px color-mix(in srgb, var(--primary,#fff) 30%, transparent);animation:kx-boot-pulse 1.6s ease-in-out infinite;" />
     </div>
-</div>
-
-<script nonce="<%= typeof nonce !== 'undefined' ? nonce : '' %>">
-    (function() {
-        if (window.imageViewerSystem) return;
-
-        window.imageViewerSystem = () => {
-            const modal = document.getElementById('imageViewerModal');
-            const panel = document.getElementById('imageViewerPanel');
-            const title = document.getElementById('imageViewerTitle');
-            const image = document.getElementById('imageViewerContent');
-            const sizeInfo = document.getElementById('imageViewerSize');
-            const downloadBtn = document.getElementById('imageViewerDownload');
-
-            let currentImagePath = '';
-            let currentFileName = '';
-            let currentServerUUID = '';
-            let modalReturnFocus = null;
-
-            const showImageViewer = (fileName, filePath, fileSize, serverUUID) => {
-                currentImagePath = filePath;
-                currentFileName = fileName;
-                currentServerUUID = serverUUID;
-
-                title.textContent = fileName;
-                sizeInfo.textContent = fileSize;
-                image.src = `/server/${serverUUID}/files/download/${encodeURIComponent(filePath)}`;
-
-                modalReturnFocus = document.activeElement;
-                modal.classList.remove('opacity-0', 'pointer-events-none');
-                modal.setAttribute('aria-hidden', 'false');
-                if (window.Animate) Animate.openModal(modal, panel);
-                else { modal.classList.add('open'); panel.classList.add('open'); }
-
-                panel.focus();
-                document.addEventListener('keydown', handleKeyDown);
-            };
-
-            const closeImageViewer = () => {
-                const done = function () {
-                    modal.classList.add('opacity-0', 'pointer-events-none');
-                    modal.setAttribute('aria-hidden', 'true');
-                };
-                if (window.Animate) Animate.closeModal(modal, panel, done);
-                else { modal.classList.remove('open'); panel.classList.remove('open'); done(); }
-                document.removeEventListener('keydown', handleKeyDown);
-                if (modalReturnFocus && typeof modalReturnFocus.focus === 'function') modalReturnFocus.focus();
-                modalReturnFocus = null;
-                setTimeout(() => {
-                    image.src = '';
-                }, 300);
-            };
-
-            const handleKeyDown = (event) => {
-                if (event.key === 'Escape') {
-                    event.preventDefault();
-                    closeImageViewer();
-                    return;
-                }
-                if (event.key !== 'Tab') return;
-                const focusable = Array.from(panel.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'))
-                    .filter(el => !el.disabled && el.offsetParent !== null);
-                if (!focusable.length) { event.preventDefault(); panel.focus(); return; }
-                const first = focusable[0];
-                const last = focusable[focusable.length - 1];
-                if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
-                else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
-            };
-
-            const downloadViewedImage = () => {
-                if (currentImagePath && currentFileName && currentServerUUID) {
-                    // Panel route mints a one-time daemon token and 302s to the
-                    // daemon, which streams the file directly to the browser.
-                    const url = `/server/${currentServerUUID}/files/download/${encodeURIComponent(currentImagePath)}`;
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.rel = 'noopener';
-                    a.download = currentFileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                }
-            };
-
-            return { showImageViewer, closeImageViewer, downloadViewedImage };
-        };
-
-        const { showImageViewer, closeImageViewer, downloadViewedImage } = window.imageViewerSystem();
-        window.showImageViewer = showImageViewer;
-        window.closeImageViewer = closeImageViewer;
-        window.downloadViewedImage = downloadViewedImage;
+    <div style="width:34px;height:34px;border-radius:999px;border:2px solid color-mix(in srgb, var(--primary,#fff) 25%, transparent);border-top-color:var(--primary,#fff);animation:kx-boot-spin 0.8s linear infinite;"></div>
+  </div>
+  <style>
+    @keyframes kx-boot-spin { to { transform: rotate(360deg); } }
+    @keyframes kx-boot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+    .kx-boot-hidden { opacity: 0 !important; pointer-events: none !important; }
+  </style>
+  <script>
+    (function () {
+      var boot = document.getElementById('kx-boot');
+      if (!boot) return;
+      var hidden = false;
+      var hide = function () {
+        if (hidden) return;
+        hidden = true;
+        boot.classList.add('kx-boot-hidden');
+        setTimeout(function () { boot.remove(); }, 350);
+      };
+      var root = document.getElementById('root');
+      if (root && 'MutationObserver' in window) {
+        var observer = new MutationObserver(function () {
+          if (root.childElementCount > 0) {
+            hide();
+            observer.disconnect();
+          }
+        });
+        observer.observe(root, { childList: true, subtree: true });
+      }
+      setTimeout(hide, 3000);
     })();
-</script>
+  </script>
+
+  <div id="root"></div>
+  <script type="module" src="/dist/assets/index.js"></script>
+</body>
+</html>

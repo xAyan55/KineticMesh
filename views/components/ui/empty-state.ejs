@@ -1,13 +1,70 @@
-<% /* empty-state: { iconName, title, description, action } */ %>
-<div class="flex flex-col items-center justify-center py-16 text-center">
-  <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl mb-3" style="background:var(--theme-bg-secondary); border:1px solid var(--theme-border);">
-    <%- icon(locals.iconName || 'inbox', { class: 'w-5 h-5', style: 'color:var(--theme-text-muted)' }) %>
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'KineticMesh' %></title>
+  <meta name="theme-color" content="#0a0a0a"/>
+  <link rel="icon" href="/favicons/favicon.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dist/assets/index.css">
+  <script>
+    window.__INITIAL_DATA__ = {
+      title: "<%= typeof title !== 'undefined' ? title : '' %>",
+      currentPage: "<%= typeof currentPage !== 'undefined' ? currentPage : '' %>",
+      siteLogo: "<%= typeof siteLogo !== 'undefined' ? siteLogo : '/arix/logo.png' %>",
+      siteName: "<%= typeof siteName !== 'undefined' ? siteName : 'KineticMesh' %>",
+      vmId: "<%= typeof vmId !== 'undefined' ? vmId : '' %>",
+      userId: "<%= typeof userId !== 'undefined' ? userId : '' %>",
+      user: typeof user !== 'undefined' && user ? {
+        id: "<%= typeof user !== 'undefined' && user && user.id ? user.id : '' %>",
+        username: "<%= typeof user !== 'undefined' && user && user.username ? user.username : '' %>",
+        email: "<%= typeof user !== 'undefined' && user && user.email ? user.email : '' %>",
+        role: "<%= typeof user !== 'undefined' && user && user.role ? user.role : 'user' %>"
+      } : undefined
+    };
+  </script>
+</head>
+<body class="bg-gray-900 text-gray-200 antialiased overflow-x-hidden">
+  <div id="kx-boot" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--gray900,#0a0a0c);transition:opacity 0.35s ease;">
+    <div style="position:relative;width:64px;height:64px;">
+      <img src="/arix/logo.png" alt="logo" style="width:100%;height:100%;object-fit:contain;padding:8px;border-radius:16px;box-shadow:0 0 0 1px color-mix(in srgb, var(--primary,#fff) 30%, transparent);animation:kx-boot-pulse 1.6s ease-in-out infinite;" />
+    </div>
+    <div style="width:34px;height:34px;border-radius:999px;border:2px solid color-mix(in srgb, var(--primary,#fff) 25%, transparent);border-top-color:var(--primary,#fff);animation:kx-boot-spin 0.8s linear infinite;"></div>
   </div>
-  <h3 class="text-[13px] font-medium" style="color:var(--theme-text-strong)"><%= locals.title || 'Nothing here' %></h3>
-  <% if (locals.description) { %>
-  <p class="text-[13px] mt-1 max-w-xs" style="color:var(--theme-text-muted)"><%= locals.description %></p>
-  <% } %>
-  <% if (locals.action) { %>
-  <div class="mt-4"><%- locals.action %></div>
-  <% } %>
-</div>
+  <style>
+    @keyframes kx-boot-spin { to { transform: rotate(360deg); } }
+    @keyframes kx-boot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+    .kx-boot-hidden { opacity: 0 !important; pointer-events: none !important; }
+  </style>
+  <script>
+    (function () {
+      var boot = document.getElementById('kx-boot');
+      if (!boot) return;
+      var hidden = false;
+      var hide = function () {
+        if (hidden) return;
+        hidden = true;
+        boot.classList.add('kx-boot-hidden');
+        setTimeout(function () { boot.remove(); }, 350);
+      };
+      var root = document.getElementById('root');
+      if (root && 'MutationObserver' in window) {
+        var observer = new MutationObserver(function () {
+          if (root.childElementCount > 0) {
+            hide();
+            observer.disconnect();
+          }
+        });
+        observer.observe(root, { childList: true, subtree: true });
+      }
+      setTimeout(hide, 3000);
+    })();
+  </script>
+
+  <div id="root"></div>
+  <script type="module" src="/dist/assets/index.js"></script>
+</body>
+</html>

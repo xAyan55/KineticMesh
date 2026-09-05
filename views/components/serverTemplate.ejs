@@ -1,132 +1,70 @@
-<div class="mt-8 ml-4 sm:ml-8 mb-8 sm:hidden">
-    <div>
-       <%
-        const rawMenuItemsMobile = global.uiComponentStore ? global.uiComponentStore.getServerMenuItems() : [];
-        const isAdminMobile = (typeof user !== 'undefined' && user && user.isAdmin === true);
-        const isSubUserMobile = (typeof req !== 'undefined' && req && req.subUser) ? true : false;
-        const menuItemsMobile = rawMenuItemsMobile.filter(item => {
-          if (item.isAdminItem && !isAdminMobile) return false;
-          if (item.ownerOnly && isSubUserMobile) return false;
-          return true;
-        });
-        const currentPath = (typeof req !== 'undefined' && req && (req.path || req.originalUrl)) ? req.path : '';
-        const isCurrentItem = (url) => url && url !== '#' && (currentPath === url || (url !== '/' && currentPath.startsWith(url + '/')));
-        const navEntries = menuItemsMobile
-          .filter(item => !item.feature || (typeof features !== 'undefined' && features.includes(item.feature)))
-          .map(item => ({
-            item,
-            url: (item.url || '#').replace(':uuid', server.UUID).replace(':id', server.id),
-          }));
-       %>
-       <!-- Mobile server nav — flat list -->
-       <div class="block sm:hidden mt-3">
-         <div class="flex flex-wrap gap-1">
-           <% navEntries.forEach(entry => { %>
-           <a href="<%= entry.url %>" class="nav-link2 flex items-center gap-1.5 py-2 px-3 text-sm rounded-xl border border-transparent whitespace-nowrap" <%= isCurrentItem(entry.url) ? 'data-active="true"' : '' %>>
-             <%- entry.item.icon %>
-             <%= entry.item.label %>
-           </a>
-           <% }); %>
-         </div>
-       </div>
-
-       <!-- Server controls live in the sidebar on desktop (see template.ejs);
-            mobile keeps the grouped tab strip below. -->
-    </div>
-  </div>
-
- <style>
-  .nav-link2 { color: var(--theme-text-muted); }
-  .nav-link2[data-active="true"] {
-    background: color-mix(in srgb, var(--theme-accent) 10%, transparent);
-    color: var(--theme-accent);
-    font-weight: 500;
-  }
- </style>
-
- <!-- Server Sections -->
- <% if (global.uiComponentStore) {
-    const sections = global.uiComponentStore.getServerSections();
-
-    if (sections && sections.length > 0) {
- %>
- <div class="px-6 sm:px-8 mt-8">
-    <% sections.forEach(section => { %>
-      <div class="al-card p-5 sm:p-6 mb-6">
-        <h2 class="al-section-title pb-3 mb-4 border-b" style="border-color:var(--theme-border)"><%= section.title %></h2>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <%
-            const items = section.items || [];
-
-            items.forEach(item => {
-              let value = item.value;
-
-              if (value.includes(':uuid')) value = value.replace(':uuid', server.UUID);
-              if (value.includes(':id')) value = value.replace(':id', server.id);
-              if (value.includes(':address')) {
-                const primaryPort = server.Ports ? JSON.parse(server.Ports).find(p => p.primary) : null;
-                const portNumber = primaryPort ? (primaryPort.externalPort || String(primaryPort.Port || '').split(':')[0]) : '';
-                value = value.replace(':address', `${server.node.address}:${portNumber}`);
-              }
-              if (value.includes(':image')) value = value.replace(':image', server.image.name || 'Unknown');
-              if (value.includes(':node')) value = value.replace(':node', server.node.name);
-              if (value.includes(':memory')) value = value.replace(':memory', `${server.Memory} MB`);
-              if (value.includes(':cpu')) value = value.replace(':cpu', `${server.Cpu}%`);
-              if (value.includes(':disk')) value = value.replace(':disk', `${server.Storage} MB`);
-          %>
-            <div class="rounded-lg px-3.5 py-3 min-w-0" style="background:var(--theme-bg-secondary)">
-              <h3 class="text-[11px] font-medium mb-1.5 truncate" style="color:var(--theme-text-muted)"><%= item.label %></h3>
-              <% if (item.type === 'link') { %>
-                <a href="<%= item.url %>" class="block text-sm font-medium truncate transition hover:opacity-75" style="color:var(--theme-accent)" title="<%= value %>"><%= value %></a>
-              <% } else if (item.type === 'button') { %>
-                <button type="button" onclick="<%= item.onClick %>" class="flex max-w-full items-center gap-1.5 text-sm font-medium transition hover:opacity-75" style="color:var(--theme-accent)" title="<%= value %>"><%- icon('arrow-up-right', { class: 'size-4 shrink-0', strokeWidth: 1.5 }) %><span class="truncate"><%= value %></span></button>
-              <% } else { %>
-                <p class="text-sm font-medium truncate" style="color:var(--theme-text-strong)" title="<%= value %>"><%= value %></p>
-              <% } %>
-            </div>
-          <% }); %>
-        </div>
-      </div>
-    <% }); %>
- </div>
- <% } } %>
-
-  <script nonce="<%= typeof nonce !== 'undefined' ? nonce : '' %>">
-   (function () {
-     // Scope to this include's own container — serverTemplate is rendered
-     // twice (desktop + mobile mains) and querying the whole document would
-     // let the hidden layout's links steal the highlight.
-      const root = document.currentScript ? document.currentScript.parentNode : document;
-      const navLinks2 = root.querySelectorAll('.nav-link2');
-
-      function updateActiveLink(path) {
-        let activeLink = null;
-        let bestLen = 0;
-       navLinks2.forEach(function(link) {
-         link.setAttribute('data-active', 'false');
-          const href = link.getAttribute('href') || '';
-          const matched = path === href || (href !== '/' && path.startsWith(href + '/'));
-         if (matched && href.length >= bestLen) {
-           bestLen = href.length;
-           activeLink = link;
-         }
-       });
-
-       if (activeLink) {
-         activeLink.setAttribute('data-active', 'true');
-       }
-     }
-
-     function syncActiveLink() {
-       updateActiveLink(window.location.pathname);
-     }
-
-     if (document.readyState === 'loading') {
-       document.addEventListener('DOMContentLoaded', syncActiveLink);
-     } else {
-       syncActiveLink();
-     }
-
-   })();
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : 'KineticMesh' %></title>
+  <meta name="theme-color" content="#0a0a0a"/>
+  <link rel="icon" href="/favicons/favicon.ico" type="image/x-icon">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/dist/assets/index.css">
+  <script>
+    window.__INITIAL_DATA__ = {
+      title: "<%= typeof title !== 'undefined' ? title : '' %>",
+      currentPage: "<%= typeof currentPage !== 'undefined' ? currentPage : '' %>",
+      siteLogo: "<%= typeof siteLogo !== 'undefined' ? siteLogo : '/arix/logo.png' %>",
+      siteName: "<%= typeof siteName !== 'undefined' ? siteName : 'KineticMesh' %>",
+      vmId: "<%= typeof vmId !== 'undefined' ? vmId : '' %>",
+      userId: "<%= typeof userId !== 'undefined' ? userId : '' %>",
+      user: typeof user !== 'undefined' && user ? {
+        id: "<%= typeof user !== 'undefined' && user && user.id ? user.id : '' %>",
+        username: "<%= typeof user !== 'undefined' && user && user.username ? user.username : '' %>",
+        email: "<%= typeof user !== 'undefined' && user && user.email ? user.email : '' %>",
+        role: "<%= typeof user !== 'undefined' && user && user.role ? user.role : 'user' %>"
+      } : undefined
+    };
   </script>
+</head>
+<body class="bg-gray-900 text-gray-200 antialiased overflow-x-hidden">
+  <div id="kx-boot" style="position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:var(--gray900,#0a0a0c);transition:opacity 0.35s ease;">
+    <div style="position:relative;width:64px;height:64px;">
+      <img src="/arix/logo.png" alt="logo" style="width:100%;height:100%;object-fit:contain;padding:8px;border-radius:16px;box-shadow:0 0 0 1px color-mix(in srgb, var(--primary,#fff) 30%, transparent);animation:kx-boot-pulse 1.6s ease-in-out infinite;" />
+    </div>
+    <div style="width:34px;height:34px;border-radius:999px;border:2px solid color-mix(in srgb, var(--primary,#fff) 25%, transparent);border-top-color:var(--primary,#fff);animation:kx-boot-spin 0.8s linear infinite;"></div>
+  </div>
+  <style>
+    @keyframes kx-boot-spin { to { transform: rotate(360deg); } }
+    @keyframes kx-boot-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+    .kx-boot-hidden { opacity: 0 !important; pointer-events: none !important; }
+  </style>
+  <script>
+    (function () {
+      var boot = document.getElementById('kx-boot');
+      if (!boot) return;
+      var hidden = false;
+      var hide = function () {
+        if (hidden) return;
+        hidden = true;
+        boot.classList.add('kx-boot-hidden');
+        setTimeout(function () { boot.remove(); }, 350);
+      };
+      var root = document.getElementById('root');
+      if (root && 'MutationObserver' in window) {
+        var observer = new MutationObserver(function () {
+          if (root.childElementCount > 0) {
+            hide();
+            observer.disconnect();
+          }
+        });
+        observer.observe(root, { childList: true, subtree: true });
+      }
+      setTimeout(hide, 3000);
+    })();
+  </script>
+
+  <div id="root"></div>
+  <script type="module" src="/dist/assets/index.js"></script>
+</body>
+</html>
