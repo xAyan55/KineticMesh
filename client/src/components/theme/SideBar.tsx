@@ -13,6 +13,7 @@ import {
   AdjustmentsIcon,
   ExternalLinkIcon,
   PlusCircleIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/outline";
 import { CopyOnClick } from "./elements/CopyOnClick";
 import { PowerButtons } from "./server/PowerButtons";
@@ -35,6 +36,7 @@ export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
   const initialData = (window as any).__INITIAL_DATA__ || {};
   const user = initialData.user || { username: "Administrator", role: "admin" };
   const isAdmin = user.role === "admin";
+  const isAdminSection = pathname.startsWith("/admin");
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -53,12 +55,13 @@ export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
 
   const isActive = (path: string) => {
     if (path === "/dashboard" && (pathname === "/dashboard" || pathname === "/")) return true;
-    if (path === "/vms" && (pathname === "/vms" || pathname === "/admin/vms")) return true;
+    if (path === "/vms" && pathname === "/vms") return true;
+    if (path === "/admin/vms" && pathname === "/admin/vms") return true;
     return pathname === path;
   };
 
   return (
-    <aside className="w-[264px] flex-shrink-0 h-screen lg:flex hidden flex-col sticky top-0 p-3 z-30">
+    <aside className="w-[264px] flex-shrink-0 h-screen lg:flex hidden flex-col sticky top-0 p-3 z-30 font-sans">
       <div className="flex flex-col h-full rounded-2xl border border-[color-mix(in_srgb,var(--gray500)_60%,transparent)] bg-gray-700 backdrop overflow-hidden shadow-[0_20px_50px_-24px_rgba(0,0,0,0.6)]">
         {/* Brand Top */}
         <div className="pt-5 px-3">
@@ -66,7 +69,7 @@ export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
             href="/dashboard"
             onClick={(e) => {
               e.preventDefault();
-              navigate("/dashboard");
+              navigate(isAdminSection ? "/admin/dashboard" : "/dashboard");
             }}
             className="flex gap-x-2.5 items-center font-semibold text-lg text-gray-50 px-3 pb-5"
           >
@@ -76,107 +79,151 @@ export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
             <span className="font-header tracking-tight">KineticMesh</span>
           </a>
 
-          {/* Primary Nav Links */}
-          <div className="flex flex-col gap-1 mb-3">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium ${
-                isActive("/dashboard")
-                  ? "bg-arix text-gray-900 font-semibold"
-                  : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-              }`}
-            >
-              <ServerIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/dashboard") ? "text-gray-900" : "text-gray-400"}`} />
-              <span>Dashboard</span>
-            </button>
+          {/* ADMIN SIDEBAR OPTIONS */}
+          {isAdminSection ? (
+            <div className="flex flex-col gap-1 mb-3">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="flex items-center px-3 py-2 gap-x-2.5 duration-200 rounded-xl mx-1 text-xs font-medium text-gray-300 hover:bg-gray-600 hover:text-gray-100 mb-2 border border-gray-600/50 bg-gray-800/40 cursor-pointer"
+              >
+                <ArrowLeftIcon className="w-4 h-4 text-arix flex-shrink-0" />
+                <span>Exit Admin Control</span>
+              </button>
 
-            <button
-              onClick={() => navigate("/vms")}
-              className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium ${
-                isActive("/vms")
-                  ? "bg-arix text-gray-900 font-semibold"
-                  : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-              }`}
-            >
-              <ViewGridIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/vms") ? "text-gray-900" : "text-gray-400"}`} />
-              <span>Virtual Machines</span>
-            </button>
+              <span className="px-3 text-xs text-gray-400 font-semibold uppercase tracking-widest block mb-1">
+                Administration
+              </span>
 
-            <button
-              onClick={() => navigate("/profile")}
-              className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium ${
-                isActive("/profile")
-                  ? "bg-arix text-gray-900 font-semibold"
-                  : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-              }`}
-            >
-              <UserCircleIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/profile") ? "text-gray-900" : "text-gray-400"}`} />
-              <span>Account</span>
-            </button>
+              <button
+                onClick={() => navigate("/admin/dashboard")}
+                className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium cursor-pointer ${
+                  isActive("/admin/dashboard")
+                    ? "bg-arix text-gray-900 font-semibold shadow-xs"
+                    : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
+                }`}
+              >
+                <CogIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/admin/dashboard") ? "text-gray-900" : "text-gray-400"}`} />
+                <span>Admin Overview</span>
+              </button>
 
-            {isAdmin && (
-              <div className="mt-3 pt-3 border-t border-[color-mix(in_srgb,var(--gray500)_40%,transparent)]">
-                <span className="px-3 text-xs text-gray-400 font-semibold uppercase tracking-widest block mb-2">
-                  Administration
-                </span>
-                <button
-                  onClick={() => navigate("/admin/dashboard")}
-                  className={`w-full flex items-center px-3 py-2 gap-x-3 duration-200 rounded-xl mx-1 text-xs font-medium ${
-                    isActive("/admin/dashboard")
-                      ? "bg-arix text-gray-900 font-semibold"
-                      : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-                  }`}
-                >
-                  <CogIcon className="w-4 h-4 flex-shrink-0" />
-                  <span>Admin Overview</span>
-                </button>
-                <button
-                  onClick={() => navigate("/admin/vm-create")}
-                  className={`w-full flex items-center px-3 py-2 gap-x-3 duration-200 rounded-xl mx-1 text-xs font-medium ${
-                    isActive("/admin/vm-create")
-                      ? "bg-arix text-gray-900 font-semibold"
-                      : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-                  }`}
-                >
-                  <PlusCircleIcon className="w-4 h-4 flex-shrink-0" />
-                  <span>Deploy Instance</span>
-                </button>
-                <button
-                  onClick={() => navigate("/admin/users")}
-                  className={`w-full flex items-center px-3 py-2 gap-x-3 duration-200 rounded-xl mx-1 text-xs font-medium ${
-                    isActive("/admin/users")
-                      ? "bg-arix text-gray-900 font-semibold"
-                      : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-                  }`}
-                >
-                  <UsersIcon className="w-4 h-4 flex-shrink-0" />
-                  <span>Users Directory</span>
-                </button>
-                <button
-                  onClick={() => navigate("/admin/templates")}
-                  className={`w-full flex items-center px-3 py-2 gap-x-3 duration-200 rounded-xl mx-1 text-xs font-medium ${
-                    isActive("/admin/templates")
-                      ? "bg-arix text-gray-900 font-semibold"
-                      : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-                  }`}
-                >
-                  <TemplateIcon className="w-4 h-4 flex-shrink-0" />
-                  <span>OS Templates</span>
-                </button>
-                <button
-                  onClick={() => navigate("/admin/settings")}
-                  className={`w-full flex items-center px-3 py-2 gap-x-3 duration-200 rounded-xl mx-1 text-xs font-medium ${
-                    isActive("/admin/settings")
-                      ? "bg-arix text-gray-900 font-semibold"
-                      : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
-                  }`}
-                >
-                  <AdjustmentsIcon className="w-4 h-4 flex-shrink-0" />
-                  <span>Panel Settings</span>
-                </button>
-              </div>
-            )}
-          </div>
+              <button
+                onClick={() => navigate("/admin/vm-create")}
+                className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium cursor-pointer ${
+                  isActive("/admin/vm-create")
+                    ? "bg-arix text-gray-900 font-semibold shadow-xs"
+                    : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
+                }`}
+              >
+                <PlusCircleIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/admin/vm-create") ? "text-gray-900" : "text-gray-400"}`} />
+                <span>Deploy Instance</span>
+              </button>
+
+              <button
+                onClick={() => navigate("/admin/vms")}
+                className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium cursor-pointer ${
+                  isActive("/admin/vms")
+                    ? "bg-arix text-gray-900 font-semibold shadow-xs"
+                    : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
+                }`}
+              >
+                <ServerIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/admin/vms") ? "text-gray-900" : "text-gray-400"}`} />
+                <span>All Virtual Machines</span>
+              </button>
+
+              <button
+                onClick={() => navigate("/admin/users")}
+                className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium cursor-pointer ${
+                  isActive("/admin/users")
+                    ? "bg-arix text-gray-900 font-semibold shadow-xs"
+                    : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
+                }`}
+              >
+                <UsersIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/admin/users") ? "text-gray-900" : "text-gray-400"}`} />
+                <span>Users Directory</span>
+              </button>
+
+              <button
+                onClick={() => navigate("/admin/templates")}
+                className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium cursor-pointer ${
+                  isActive("/admin/templates")
+                    ? "bg-arix text-gray-900 font-semibold shadow-xs"
+                    : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
+                }`}
+              >
+                <TemplateIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/admin/templates") ? "text-gray-900" : "text-gray-400"}`} />
+                <span>OS Templates</span>
+              </button>
+
+              <button
+                onClick={() => navigate("/admin/settings")}
+                className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium cursor-pointer ${
+                  isActive("/admin/settings")
+                    ? "bg-arix text-gray-900 font-semibold shadow-xs"
+                    : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
+                }`}
+              >
+                <AdjustmentsIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/admin/settings") ? "text-gray-900" : "text-gray-400"}`} />
+                <span>Panel Settings</span>
+              </button>
+            </div>
+          ) : (
+            /* USER SIDEBAR OPTIONS */
+            <div className="flex flex-col gap-1 mb-3">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium cursor-pointer ${
+                  isActive("/dashboard")
+                    ? "bg-arix text-gray-900 font-semibold shadow-xs"
+                    : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
+                }`}
+              >
+                <ServerIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/dashboard") ? "text-gray-900" : "text-gray-400"}`} />
+                <span>Dashboard</span>
+              </button>
+
+              <button
+                onClick={() => navigate("/vms")}
+                className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium cursor-pointer ${
+                  isActive("/vms")
+                    ? "bg-arix text-gray-900 font-semibold shadow-xs"
+                    : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
+                }`}
+              >
+                <ViewGridIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/vms") ? "text-gray-900" : "text-gray-400"}`} />
+                <span>Virtual Machines</span>
+              </button>
+
+              <button
+                onClick={() => navigate("/profile")}
+                className={`flex items-center px-3 py-2.5 gap-x-3 duration-200 rounded-xl mx-1 text-sm font-medium cursor-pointer ${
+                  isActive("/profile")
+                    ? "bg-arix text-gray-900 font-semibold shadow-xs"
+                    : "text-gray-300 hover:bg-gray-600 hover:text-gray-100"
+                }`}
+              >
+                <UserCircleIcon className={`w-5 h-5 flex-shrink-0 ${isActive("/profile") ? "text-gray-900" : "text-gray-400"}`} />
+                <span>Account</span>
+              </button>
+
+              {isAdmin && (
+                <div className="mt-2 pt-2 border-t border-[color-mix(in_srgb,var(--gray500)_30%,transparent)]">
+                  <button
+                    onClick={() => navigate("/admin/dashboard")}
+                    className="w-full flex items-center justify-between px-3 py-2 duration-200 rounded-xl mx-1 text-xs font-medium text-gray-400 hover:bg-gray-600 hover:text-gray-100 cursor-pointer"
+                  >
+                    <div className="flex items-center gap-2">
+                      <CogIcon className="w-4 h-4 text-arix" />
+                      <span>Admin Area</span>
+                    </div>
+                    <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-arix/10 text-arix">
+                      Admin
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
           <hr className="border-b border-[color-mix(in_srgb,var(--gray500)_60%,transparent)] mx-2 my-2" />
         </div>
 
@@ -208,7 +255,7 @@ export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
               <div className="flex flex-col gap-1 mt-3 pt-3 border-t border-gray-600/60">
                 <button
                   onClick={() => navigate(`/vm/${currentVm.id}`)}
-                  className={`flex items-center px-3 py-2 gap-x-2.5 rounded-lg text-xs font-medium ${
+                  className={`flex items-center px-3 py-2 gap-x-2.5 rounded-lg text-xs font-medium cursor-pointer ${
                     pathname === `/vm/${currentVm.id}` ? "bg-gray-600 text-gray-50" : "text-gray-300 hover:bg-gray-600"
                   }`}
                 >
@@ -217,7 +264,7 @@ export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
                 </button>
                 <button
                   onClick={() => navigate(`/vm/${currentVm.id}/console`)}
-                  className={`flex items-center px-3 py-2 gap-x-2.5 rounded-lg text-xs font-medium ${
+                  className={`flex items-center px-3 py-2 gap-x-2.5 rounded-lg text-xs font-medium cursor-pointer ${
                     pathname === `/vm/${currentVm.id}/console` ? "bg-gray-600 text-gray-50" : "text-gray-300 hover:bg-gray-600"
                   }`}
                 >
@@ -226,7 +273,7 @@ export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
                 </button>
                 <button
                   onClick={() => navigate(`/vm/${currentVm.id}/ssh`)}
-                  className={`flex items-center px-3 py-2 gap-x-2.5 rounded-lg text-xs font-medium ${
+                  className={`flex items-center px-3 py-2 gap-x-2.5 rounded-lg text-xs font-medium cursor-pointer ${
                     pathname === `/vm/${currentVm.id}/ssh` ? "bg-gray-600 text-gray-50" : "text-gray-300 hover:bg-gray-600"
                   }`}
                 >
@@ -248,7 +295,7 @@ export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
                 e.preventDefault();
                 navigate("/profile");
               }}
-              className="flex items-center gap-x-2.5 min-w-0"
+              className="flex items-center gap-x-2.5 min-w-0 cursor-pointer"
             >
               <div className="w-8 h-8 rounded-full bg-arix/20 border border-arix/40 flex items-center justify-center text-arix font-semibold text-xs flex-shrink-0">
                 {user.username?.charAt(0).toUpperCase() || "U"}
@@ -258,7 +305,7 @@ export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
 
             <button
               onClick={() => setDropdownOpen(!dropdownOpen)}
-              className="text-gray-400 hover:text-gray-100 p-1.5 rounded-lg hover:bg-gray-600 duration-150 flex-shrink-0"
+              className="text-gray-400 hover:text-gray-100 p-1.5 rounded-lg hover:bg-gray-600 duration-150 flex-shrink-0 cursor-pointer"
             >
               <DotsVerticalIcon className="w-5 h-5" />
             </button>
@@ -269,12 +316,12 @@ export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
                   <button
                     onClick={() => {
                       setDropdownOpen(false);
-                      navigate("/admin/dashboard");
+                      navigate(isAdminSection ? "/dashboard" : "/admin/dashboard");
                     }}
-                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-200 hover:bg-gray-700 rounded-lg"
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-200 hover:bg-gray-700 rounded-lg cursor-pointer"
                   >
-                    <CogIcon className="w-4 h-4" />
-                    <span>Admin View</span>
+                    <CogIcon className="w-4 h-4 text-arix" />
+                    <span>{isAdminSection ? "User View" : "Admin View"}</span>
                   </button>
                 )}
                 <button
@@ -282,7 +329,7 @@ export const SideBar: React.FC<SideBarProps> = ({ currentVm, children }) => {
                     setDropdownOpen(false);
                     navigate("/profile");
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-200 hover:bg-gray-700 rounded-lg"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-gray-200 hover:bg-gray-700 rounded-lg cursor-pointer"
                 >
                   <UserCircleIcon className="w-4 h-4" />
                   <span>Profile Settings</span>
